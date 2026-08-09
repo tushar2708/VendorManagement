@@ -29,31 +29,44 @@ place to onboard, track, and evaluate suppliers across their lifecycle.
 
 ## Tech stack
 
-- **Next.js** (React) — application framework and UI
-- **TypeScript** — type-safe application code
-- **Vercel** — deployment target
+- **React** — frontend single-page application (UI)
+- **Express** (Node.js) — backend REST API and server logic
+- **Node.js** — runtime for the Express server
+
+The project is organized as two parts:
+
+- `client/` — the React frontend
+- `server/` — the Express API
 
 ## Getting started
 
 > Prerequisite: [Node.js](https://nodejs.org/) 18+ and npm.
 
-```bash
-# Install dependencies
-npm install
+Install dependencies and run the frontend and backend in separate terminals.
 
-# Run the development server
-npm run dev
+```bash
+# Backend (Express API)
+cd server
+npm install
+npm run dev        # starts the API, e.g. http://localhost:5000
+
+# Frontend (React app) — in a second terminal
+cd client
+npm install
+npm start          # starts the UI, e.g. http://localhost:3000
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
+Then open [http://localhost:3000](http://localhost:3000) in your browser. The
+React app talks to the Express API running on its own port.
 
 ### Environment variables
 
-Copy the example environment file and fill in your values (database URL, auth
-secrets, etc.):
+The Express server reads configuration from a `.env` file (database URL, auth
+secrets, port, etc.). Copy the example file in `server/` and fill in your values:
 
 ```bash
-cp .env.example .env.local
+cd server
+cp .env.example .env
 ```
 
 Local env files (`.env`, `.env*.local`) are git-ignored and should never be
