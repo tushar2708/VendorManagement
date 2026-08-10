@@ -10,4 +10,9 @@ export default defineConfig({
   envDir: rootDirectory,
   plugins: [react(), tailwindcss()],
   server: { port: 5173 },
+  resolve: {
+    alias: {
+      "@": path.resolve(path.dirname(fileURLToPath(import.meta.url)), "src"),
+    },
+  },
 });

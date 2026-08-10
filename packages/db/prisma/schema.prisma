@@ -7,16 +7,182 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserRole {
+  BUYER
+  VENDOR
+  ADMIN
+}
+
+enum VendorType {
+  PRODUCTION_PART
+  INDIRECT_SERVICES
+}
+
+enum RequestProcess {
+  RFQ
+  NOMINATION
+  DIRECT
+}
+
+enum RequestStatus {
+  DRAFT
+  CANDIDATES_SELECTED
+  INVITES_DISPATCHED
+  PREQUAL_IN_PROGRESS
+  PREQUAL_COMPLETE
+  AWARDED
+  FULL_PACK_SUBMITTED
+  DEEP_VERIFICATION
+  APPROVALS_IN_PROGRESS
+  CONTRACT_REVIEW
+  ERP_PUSH
+  COMPLETED
+  CANCELLED
+}
+
+enum InviteChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum InviteStatus {
+  PENDING
+  OPENED
+  REGISTERED
+  EXPIRED
+}
+
+enum CandidateStatus {
+  SELECTED
+  INVITED
+  PREQUAL_SUBMITTED
+  APPROVED
+  REJECTED
+  AWARDED
+  WARM_POOL
+}
+
+enum VerificationCheckType {
+  PAN
+  GSTIN
+  UDYAM
+  BANK_PENNY_DROP
+  COMPANY_FILINGS
+  DIRECTOR_UBO_SCREENING
+}
+
+enum VerificationCheckStatus {
+  PENDING
+  IN_PROGRESS
+  PASS
+  PARTIAL_MATCH
+  FAIL
+  MANUAL_OVERRIDE
+}
+
+enum DocumentCategory {
+  BANK_DETAILS
+  STATUTORY
+  LEGAL
+  IDENTITY
+  CAPABILITY
+}
+
+enum DocumentStatus {
+  PENDING
+  UPLOADED
+  VERIFIED
+  REJECTED
+}
+
+enum ApprovalStage {
+  FINANCE
+  LEGAL
+  IT_SECURITY
+  QUALITY
+}
+
+enum ApprovalStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  ESCALATED
+}
+
+enum SlaRisk {
+  ON_TRACK
+  AT_RISK
+  OVERDUE
+}
+
+enum ContractStatus {
+  DRAFT
+  BUYER_REVIEW
+  VENDOR_REVIEW
+  AWAITING_BUYER_SIGNATURE
+  AWAITING_VENDOR_SIGNATURE
+  SIGNED
+  VOIDED
+}
+
+enum ErpPushStatus {
+  PENDING
+  IN_PROGRESS
+  SUCCESS
+  FAILED
+}
+
+enum ActivityAction {
+  REQUEST_CREATED
+  REQUEST_UPDATED
+  CANDIDATES_SELECTED
+  INVITES_DISPATCHED
+  INVITE_OPENED
+  VENDOR_REGISTERED
+  PREQUAL_SUBMITTED
+  VERIFICATION_STARTED
+  VERIFICATION_COMPLETED
+  PREQUAL_APPROVED
+  PREQUAL_REJECTED
+  VENDOR_AWARDED
+  WARM_POOL_ADDED
+  FULL_PACK_SUBMITTED
+  DOCUMENT_UPLOADED
+  DOCUMENT_VERIFIED
+  DEEP_VERIFICATION_STARTED
+  DEEP_VERIFICATION_COMPLETED
+  APPROVAL_SUBMITTED
+  APPROVAL_APPROVED
+  APPROVAL_REJECTED
+  APPROVAL_ESCALATED
+  CONTRACT_UPLOADED
+  CONTRACT_COMMENT_ADDED
+  CONTRACT_SIGNED
+  ERP_PUSH_INITIATED
+  ERP_PUSH_COMPLETED
+  REMINDER_SENT
+  ISSUE_FLAGGED
+  VENDOR_ACTIVATED
+}
+
 model User {
   id            String    @id
   name          String
   email         String    @unique
   emailVerified Boolean   @default(false)
   image         String?
+  role          UserRole  @default(BUYER)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
+
+  createdRequests     VendorRequest[]    @relation("RequestCreator")
+  approvalAssignments Approval[]         @relation("Approver")
+  activityLogs        ActivityLog[]
+  contractComments    ContractComment[]
+  vendorProfile       Vendor?            @relation("VendorUser")
 }
 
 model Session {
@@ -61,4 +227,242 @@ model Verification {
   updatedAt  DateTime @updatedAt
 
   @@index([identifier])
+}
+
+model Vendor {
+  id              String       @id @default(cuid())
+  name            String
+  contactEmail    String       @unique
+  vendorType      VendorType?
+  panNumber       String?
+  gstin           String?
+  udyamNumber     String?
+  vendorCode      String?      @unique
+  isVerified      Boolean      @default(false)
+  isInWarmPool    Boolean      @default(false)
+  isInDirectory   Boolean      @default(false)
+  prequalScore    Int?
+  category        String?
+  certifications  String[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  userId          String?      @unique
+  user            User?        @relation("VendorUser", fields: [userId], references: [id])
+
+  candidates          RequestCandidate[]
+  invitations         VendorInvitation[]
+  verificationChecks  VerificationCheck[]
+  documents           Document[]
+  approvals           Approval[]
+  contracts           Contract[]
+  erpPushRecords      ErpPushRecord[]
+  activityLogs        ActivityLog[]
+
+  @@index([contactEmail])
+  @@index([vendorCode])
+}
+
+model VendorRequest {
+  id                    String          @id @default(cuid())
+  requestNumber         String          @unique
+  status                RequestStatus   @default(DRAFT)
+  category              String
+  process               RequestProcess
+  vendorType            VendorType
+  businessJustification String?
+  notes                 String?
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  createdById           String
+  createdBy             User            @relation("RequestCreator", fields: [createdById], references: [id])
+
+  candidates            RequestCandidate[]
+  invitations           VendorInvitation[]
+  activityLogs          ActivityLog[]
+
+  @@index([createdById])
+  @@index([status])
+  @@index([requestNumber])
+}
+
+model RequestCandidate {
+  id              String           @id @default(cuid())
+  status          CandidateStatus  @default(SELECTED)
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  requestId       String
+  request         VendorRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  vendorId        String
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+
+  @@unique([requestId, vendorId])
+  @@index([requestId])
+  @@index([vendorId])
+}
+
+model VendorInvitation {
+  id              String        @id @default(cuid())
+  token           String        @unique @default(cuid())
+  channel         InviteChannel @default(EMAIL)
+  status          InviteStatus  @default(PENDING)
+  expiresAt       DateTime
+  remindersSent   Int           @default(0)
+  lastReminderAt  DateTime?
+  openedAt        DateTime?
+  registeredAt    DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  vendorId        String
+  vendor          Vendor        @relation(fields: [vendorId], references: [id])
+  requestId       String
+  request         VendorRequest @relation(fields: [requestId], references: [id])
+
+  @@index([token])
+  @@index([vendorId])
+  @@index([requestId])
+}
+
+model VerificationCheck {
+  id              String                   @id @default(cuid())
+  type            VerificationCheckType
+  status          VerificationCheckStatus  @default(PENDING)
+  matchScore      Int?
+  rawResponse     String?
+  notes           String?
+  verifiedAt      DateTime?
+  verifiedById    String?
+  createdAt       DateTime                 @default(now())
+  updatedAt       DateTime                 @updatedAt
+
+  vendorId        String
+  vendor          Vendor                   @relation(fields: [vendorId], references: [id])
+
+  @@unique([vendorId, type])
+  @@index([vendorId])
+}
+
+model Document {
+  id              String           @id @default(cuid())
+  name            String
+  category        DocumentCategory
+  mimeType        String
+  sizeBytes       Int
+  data            String
+  status          DocumentStatus   @default(PENDING)
+  uploadedAt      DateTime         @default(now())
+  verifiedAt      DateTime?
+  rejectionReason String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  vendorId        String
+  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+  @@index([category])
+}
+
+model SlaRule {
+  id                    String        @id @default(cuid())
+  stage                 ApprovalStage @unique
+  slaDays               Int
+  escalateAfterBreach   Boolean       @default(true)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+}
+
+model Approval {
+  id              String         @id @default(cuid())
+  stage           ApprovalStage
+  status          ApprovalStatus @default(PENDING)
+  slaRisk         SlaRisk        @default(ON_TRACK)
+  enteredStageAt  DateTime       @default(now())
+  completedAt     DateTime?
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+
+  vendorId        String
+  vendor          Vendor         @relation(fields: [vendorId], references: [id])
+  assignedToId    String?
+  assignedTo      User?          @relation("Approver", fields: [assignedToId], references: [id])
+
+  @@unique([vendorId, stage])
+  @@index([vendorId])
+  @@index([assignedToId])
+  @@index([status])
+}
+
+model Contract {
+  id              String          @id @default(cuid())
+  title           String
+  status          ContractStatus  @default(DRAFT)
+  documentData    String?
+  documentName    String?
+  mimeType        String?
+  sizeBytes       Int?
+  buyerSignedAt   DateTime?
+  vendorSignedAt  DateTime?
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+
+  vendorId        String
+  vendor          Vendor          @relation(fields: [vendorId], references: [id])
+  comments        ContractComment[]
+
+  @@index([vendorId])
+}
+
+model ContractComment {
+  id              String   @id @default(cuid())
+  content         String
+  createdAt       DateTime @default(now())
+
+  contractId      String
+  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  authorId        String
+  author          User     @relation(fields: [authorId], references: [id])
+
+  @@index([contractId])
+}
+
+model ErpPushRecord {
+  id              String        @id @default(cuid())
+  status          ErpPushStatus @default(PENDING)
+  vendorCode      String?
+  apiMethod       String?
+  responsePayload String?
+  errorMessage    String?
+  pushedAt        DateTime?
+  totalDays       Int?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  vendorId        String
+  vendor          Vendor        @relation(fields: [vendorId], references: [id])
+
+  @@index([vendorId])
+}
+
+model ActivityLog {
+  id              String         @id @default(cuid())
+  action          ActivityAction
+  message         String
+  metadata        String?
+  createdAt       DateTime       @default(now())
+
+  requestId       String?
+  request         VendorRequest? @relation(fields: [requestId], references: [id])
+  vendorId        String?
+  vendor          Vendor?        @relation(fields: [vendorId], references: [id])
+  userId          String?
+  user            User?          @relation(fields: [userId], references: [id])
+
+  @@index([requestId])
+  @@index([vendorId])
+  @@index([createdAt])
 }
