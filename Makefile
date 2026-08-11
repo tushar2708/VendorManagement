@@ -6,7 +6,7 @@ IMAGE_NAME := vendor-management
 
 .PHONY: help dev dev-frontend dev-backend install install-frontend install-backend \
 	build build-frontend build-backend \
-	db-generate db-migrate db-migrate-create db-migrate-status db-migrate-deploy db-push db-studio \
+	db-generate db-migrate db-migrate-create db-migrate-status db-migrate-deploy db-push db-studio db-seed \
 	docker-build docker-run stop kill-port lint lint-frontend lint-backend \
 	typecheck typecheck-frontend typecheck-backend \
 	deploy deploy-ensure deploy-vars deploy-up
@@ -73,6 +73,8 @@ db-push: ## Block direct schema pushes; use db-migrate instead
 db-studio: ## Open Prisma Studio
 	cd $(ROOT_DIR) && npx prisma studio --schema=$(DB_SCHEMA)
 
+db-seed: ## Seed the database with test data
+	cd $(ROOT_DIR) && npx tsx --env-file=.env packages/db/prisma/seed.ts
 
 # ── Type Checking and Tests ───────────────────────────────────
 

@@ -11,3 +11,6 @@ export * from "./schemas/contract.js";
 export * from "./schemas/sla-rule.js";
 export * from "./schemas/erp-push.js";
 export * from "./schemas/activity.js";
+export * from "./schemas/requirement.js";
+export * from "./schemas/candidate.js";
+export * from "./schemas/directory.js";

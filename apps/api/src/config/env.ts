@@ -12,6 +12,9 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().url().default("http://localhost:5173"),
   BETTER_AUTH_SECRET: z.string().min(32),
   BETTER_AUTH_URL: z.string().url().default("http://localhost:3001"),
+  APP_BASE_URL: z.string().url().default("http://localhost:5173"),
+  RESEND_API_KEY: z.string().optional(),
+  RESEND_FROM: z.string().default("onboarding@vendor.local"),
 });
 
 const testDefaults = process.env.NODE_ENV === "test"

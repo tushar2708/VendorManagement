@@ -9,7 +9,7 @@ const rootDirectory = path.resolve(path.dirname(fileURLToPath(import.meta.url)),
 export default defineConfig({
   envDir: rootDirectory,
   plugins: [react(), tailwindcss()],
-  server: { port: 5173 },
+  server: { port: 5173, strictPort: true },
   resolve: {
     alias: {
       "@": path.resolve(path.dirname(fileURLToPath(import.meta.url)), "src"),

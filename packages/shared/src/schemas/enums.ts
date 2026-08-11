@@ -19,7 +19,7 @@ export type RequestStatus = z.infer<typeof requestStatusSchema>;
 export const inviteChannelSchema = z.enum(["EMAIL", "WHATSAPP"]);
 export type InviteChannel = z.infer<typeof inviteChannelSchema>;
 
-export const inviteStatusSchema = z.enum(["PENDING", "OPENED", "REGISTERED", "EXPIRED"]);
+export const inviteStatusSchema = z.enum(["PENDING", "INVITED", "OPENED", "REGISTERED", "EXPIRED"]);
 export type InviteStatus = z.infer<typeof inviteStatusSchema>;
 
 export const candidateStatusSchema = z.enum([

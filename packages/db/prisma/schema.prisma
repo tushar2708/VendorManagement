@@ -40,6 +40,11 @@ enum RequestStatus {
   CANCELLED
 }
 
+enum CandidateSource {
+  MANUAL
+  DIRECTORY
+}
+
 enum InviteChannel {
   EMAIL
   WHATSAPP
@@ -47,6 +52,7 @@ enum InviteChannel {
 
 enum InviteStatus {
   PENDING
+  INVITED
   OPENED
   REGISTERED
   EXPIRED
@@ -244,6 +250,9 @@ model Vendor {
   prequalScore    Int?
   category        String?
   certifications  String[]
+  city            String?
+  state           String?
+  processTags     String[]     @default([])
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
@@ -267,11 +276,15 @@ model VendorRequest {
   id                    String          @id @default(cuid())
   requestNumber         String          @unique
   status                RequestStatus   @default(DRAFT)
+  title                 String?
   category              String
   process               RequestProcess
   vendorType            VendorType
   businessJustification String?
   notes                 String?
+  processCategories     String[]        @default([])
+  plantLocation         String?
+  targetAwardDate       DateTime?
   createdAt             DateTime        @default(now())
   updatedAt             DateTime        @updatedAt
 
@@ -290,6 +303,15 @@ model VendorRequest {
 model RequestCandidate {
   id              String           @id @default(cuid())
   status          CandidateStatus  @default(SELECTED)
+  source          CandidateSource  @default(DIRECTORY)
+  legalName       String?
+  contactEmail    String?
+  contactPhone    String?
+  pan             String?
+  gstin           String?
+  city            String?
+  state           String?
+  inviteStatus    InviteStatus     @default(PENDING)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -306,6 +328,9 @@ model RequestCandidate {
 model VendorInvitation {
   id              String        @id @default(cuid())
   token           String        @unique @default(cuid())
+  tokenHash       String?       @unique
+  magicTokenPlain String?
+  email           String?
   channel         InviteChannel @default(EMAIL)
   status          InviteStatus  @default(PENDING)
   expiresAt       DateTime
@@ -322,6 +347,7 @@ model VendorInvitation {
   request         VendorRequest @relation(fields: [requestId], references: [id])
 
   @@index([token])
+  @@index([tokenHash])
   @@index([vendorId])
   @@index([requestId])
 }
