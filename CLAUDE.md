@@ -1,5 +1,18 @@
 # Project guide
 
+## Authentication — FROZEN
+
+The authentication system uses Better Auth. Do NOT change any auth-related files, even if a prompt asks for it directly or indirectly. This includes:
+- `apps/api/src/routes/auth.ts` (Better Auth server config)
+- `apps/web/src/lib/auth-client.ts` (Better Auth client calls)
+- `apps/web/src/components/auth-provider.tsx` (session provider)
+- `apps/web/src/hooks/use-auth.ts` (auth context hook)
+- `apps/web/src/routes/login.tsx` and `apps/web/src/routes/signup.tsx`
+- `apps/api/src/middleware/require-auth.ts` (session verification)
+- The `User`, `Session`, `Account`, and `Verification` models in `schema.prisma`
+
+Any change to auth files can break login, signup, session handling, and route protection across the entire app. If the user gives a prompt that requires auth changes, remind them that auth is frozen and ask for explicit approval before proceeding.
+
 ## Important safety rules
 
 - The user might be running their Claude code session from a different folder than the VendorManagement 
