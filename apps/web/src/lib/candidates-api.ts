@@ -5,6 +5,7 @@ import {
   type RequirementDetail,
   type DirectoryVendor,
   type AddCandidateInput,
+  type UpdateCandidateInput,
   type InviteResponse,
 } from '@vendor-management/shared';
 import { http } from './http.js';
@@ -38,7 +39,16 @@ export async function removeCandidate(requirementId: string, candidateId: string
   await http.delete(`/api/requirements/${requirementId}/candidates/${candidateId}`);
 }
 
-export async function dispatchInvites(requirementId: string): Promise<InviteResponse> {
-  const response = await http.post(`/api/requirements/${requirementId}/invites`);
+export async function updateCandidate(
+  requirementId: string,
+  candidateId: string,
+  data: UpdateCandidateInput,
+): Promise<RequirementDetail> {
+  const response = await http.patch(`/api/requirements/${requirementId}/candidates/${candidateId}`, data);
+  return requirementDetailResponseSchema.parse(response.data).requirement;
+}
+
+export async function dispatchInvites(requirementId: string, candidateIds?: string[]): Promise<InviteResponse> {
+  const response = await http.post(`/api/requirements/${requirementId}/invites`, { candidateIds });
   return inviteResponseSchema.parse(response.data);
 }

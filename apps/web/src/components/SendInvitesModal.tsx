@@ -10,12 +10,14 @@ export function SendInvitesModal({
   onClose,
   requirementId,
   pending,
+  selectedIds,
   onDispatched,
 }: {
   readonly open: boolean;
   readonly onClose: () => void;
   readonly requirementId: string;
   readonly pending: Candidate[]; // NOT_INVITED candidates
+  readonly selectedIds: Set<string>;
   readonly onDispatched: (detail: RequirementDetail) => void;
 }): React.ReactElement {
   const [results, setResults] = useState<InviteResult[] | null>(null);
@@ -28,11 +30,14 @@ export function SendInvitesModal({
     onClose();
   }
 
+  const toInvite = selectedIds.size > 0 ? pending.filter((c) => selectedIds.has(c.id)) : pending;
+
   async function send(): Promise<void> {
     setSubmitting(true);
     setError(null);
     try {
-      const response = await dispatchInvites(requirementId);
+      const candidateIds = selectedIds.size > 0 ? [...selectedIds] : undefined;
+      const response = await dispatchInvites(requirementId, candidateIds);
       setResults(response.results);
       onDispatched(response.requirement);
     } catch (e: unknown) {
@@ -81,10 +86,10 @@ export function SendInvitesModal({
       ) : (
         <div>
           <p className="text-sm text-slate-600">
-            A magic-link invite will be sent to {pending.length} {pending.length === 1 ? 'vendor' : 'vendors'}:
+            A magic-link invite will be sent to {toInvite.length} {toInvite.length === 1 ? 'vendor' : 'vendors'}:
           </p>
           <ul className="mt-3 max-h-56 overflow-y-auto rounded-lg border border-slate-200">
-            {pending.map((c) => (
+            {toInvite.map((c) => (
               <li key={c.id} className="border-b border-slate-100 px-3 py-2 text-sm last:border-0">
                 <span className="font-medium text-slate-800">{c.legalName}</span> <span className="text-slate-400">· {c.contactEmail}</span>
               </li>
@@ -95,8 +100,8 @@ export function SendInvitesModal({
             <Button variant="secondary" onClick={close}>
               Cancel
             </Button>
-            <Button onClick={send} disabled={submitting || pending.length === 0}>
-              {submitting ? 'Sending…' : `Send ${pending.length} ${pending.length === 1 ? 'invite' : 'invites'}`}
+            <Button onClick={send} disabled={submitting || toInvite.length === 0}>
+              {submitting ? 'Sending…' : `Send ${toInvite.length} ${toInvite.length === 1 ? 'invite' : 'invites'}`}
             </Button>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Router } from 'express';
 import {
   createRequirementSchema,
   addCandidatesSchema,
+  updateCandidateSchema,
   type CreateRequirementInput,
   type AddCandidatesInput,
   type RequirementSummary,
@@ -332,15 +333,51 @@ requirementsRouter.delete('/:id/candidates/:candidateId', async (req, res, next)
   }
 });
 
+requirementsRouter.patch('/:id/candidates/:candidateId', validateBody(updateCandidateSchema), async (req, res, next) => {
+  try {
+    const requirementId = req.params.id as string;
+    const candidateId = req.params.candidateId as string;
+    const candidate = await prisma.requestCandidate.findFirst({
+      where: { id: candidateId, requestId: requirementId, request: { createdById: req.user!.userId } },
+    });
+    if (!candidate) {
+      res.status(404).json({ error: 'Candidate not found' });
+      return;
+    }
+    if (candidate.inviteStatus !== 'PENDING') {
+      res.status(409).json({ error: 'Cannot edit an invited candidate' });
+      return;
+    }
+    const updateData: Record<string, string | null> = {};
+    for (const [key, value] of Object.entries(req.body as Record<string, string>)) {
+      updateData[key] = value === '' ? null : value;
+    }
+    await prisma.requestCandidate.update({
+      where: { id: candidate.id },
+      data: updateData,
+    });
+    const detail = await loadDetail(req.user!.userId, requirementId);
+    res.json({ requirement: detail });
+  } catch (error) {
+    next(error);
+  }
+});
+
 // Dispatch magic-link invites to every not-yet-invited candidate.
 requirementsRouter.post('/:id/invites', async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const requirementId = req.params.id as string;
+    const { candidateIds } = req.body as { candidateIds?: string[] };
+
+    const candidateWhere: any = { inviteStatus: 'PENDING' };
+    if (candidateIds && candidateIds.length > 0) {
+      candidateWhere.id = { in: candidateIds };
+    }
 
     const requirement = await prisma.vendorRequest.findFirst({
       where: { id: requirementId, createdById: userId },
-      include: { candidates: { where: { inviteStatus: 'PENDING' }, orderBy: { createdAt: 'asc' } } },
+      include: { candidates: { where: candidateWhere, orderBy: { createdAt: 'asc' } } },
     });
     if (!requirement) {
       res.status(404).json({ error: 'Requirement not found' });

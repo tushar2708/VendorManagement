@@ -2,21 +2,14 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
-import bcrypt from 'bcrypt';
 import { PrismaClient, type Prisma } from '@prisma/client';
 
-// Load the shared root .env whether run from the repo root or packages/db.
 const here = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 dotenv.config({ path: path.resolve(here, '../../../.env') });
 
 const prisma = new PrismaClient();
-
 const RESET = process.argv.includes('--reset');
-
-// A known dev login — printed after seeding.
-const SEED_USER_EMAIL = 'buyer@meridian.test';
-const SEED_USER_PASSWORD = 'Password123!';
 
 function gstinFor(stateCode: string, pan: string): string {
   // Format-plausible GSTIN: <state><PAN>1Z5 (15 chars). Not a real checksum.
@@ -32,63 +25,39 @@ type SeedVendor = {
   state: string;
   processTags: string[];
   certificationTags: string[];
-  badgeState: 'VERIFIED' | 'LISTED';
+  isVerified: boolean;
 };
 
 const directoryVendors: SeedVendor[] = [
-  { legalName: 'Chakan Precision Castings Pvt Ltd', pan: 'AABCC1234A', stateCode: '27', contactEmail: 'sales@chakanprecision.test', city: 'Chakan', state: 'Maharashtra', processTags: ['HPDC', 'Gravity Casting'], certificationTags: ['IATF 16949', 'ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Pune AutoForge Industries', pan: 'AAECP2345B', stateCode: '27', contactEmail: 'contact@puneautoforge.test', city: 'Pune', state: 'Maharashtra', processTags: ['Forging', 'Heat Treatment'], certificationTags: ['IATF 16949'], badgeState: 'VERIFIED' },
-  { legalName: 'Oragadam Machined Components', pan: 'AADCO3456C', stateCode: '33', contactEmail: 'info@oragadammachined.test', city: 'Oragadam', state: 'Tamil Nadu', processTags: ['CNC Turning', 'VMC'], certificationTags: ['IATF 16949', 'ISO 14001'], badgeState: 'VERIFIED' },
-  { legalName: 'Chennai Sheetmetal Works', pan: 'AAFCC4567D', stateCode: '33', contactEmail: 'rfq@chennaisheetmetal.test', city: 'Chennai', state: 'Tamil Nadu', processTags: ['Sheet Metal'], certificationTags: ['ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Manesar Die Casting Co', pan: 'AAGCM5678E', stateCode: '06', contactEmail: 'sales@manesardiecasting.test', city: 'Manesar', state: 'Haryana', processTags: ['HPDC'], certificationTags: ['IATF 16949', 'ISO 9001', 'ISO 14001'], badgeState: 'VERIFIED' },
-  { legalName: 'Gurgaon Plating Solutions', pan: 'AAHCG6789F', stateCode: '06', contactEmail: 'ops@gurgaonplating.test', city: 'Manesar', state: 'Haryana', processTags: ['Plating', 'Heat Treatment'], certificationTags: ['ISO 9001'], badgeState: 'LISTED' },
-  { legalName: 'Rajkot Turned Parts Pvt Ltd', pan: 'AAJCR7890G', stateCode: '24', contactEmail: 'enquiry@rajkotturned.test', city: 'Rajkot', state: 'Gujarat', processTags: ['CNC Turning'], certificationTags: ['IATF 16949'], badgeState: 'VERIFIED' },
-  { legalName: 'Saurashtra Forgings Ltd', pan: 'AAKCS8901H', stateCode: '24', contactEmail: 'sales@saurashtraforgings.test', city: 'Rajkot', state: 'Gujarat', processTags: ['Forging'], certificationTags: ['IATF 16949', 'ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Coimbatore Casting & Machining', pan: 'AALCC9012J', stateCode: '33', contactEmail: 'info@cbecasting.test', city: 'Coimbatore', state: 'Tamil Nadu', processTags: ['Gravity Casting', 'VMC'], certificationTags: ['ISO 9001', 'ISO 14001'], badgeState: 'VERIFIED' },
-  { legalName: 'Kovai Precision Engineering', pan: 'AAMCK0123K', stateCode: '33', contactEmail: 'quotes@kovaiprecision.test', city: 'Coimbatore', state: 'Tamil Nadu', processTags: ['CNC Turning', 'VMC'], certificationTags: ['IATF 16949'], badgeState: 'VERIFIED' },
-  { legalName: 'Ludhiana Auto Components', pan: 'AANCL1234L', stateCode: '03', contactEmail: 'sales@ludhianaauto.test', city: 'Ludhiana', state: 'Punjab', processTags: ['Sheet Metal', 'Plating'], certificationTags: ['ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Punjab Fasteners & Forgings', pan: 'AAPCP2345M', stateCode: '03', contactEmail: 'info@punjabfasteners.test', city: 'Ludhiana', state: 'Punjab', processTags: ['Forging', 'Heat Treatment'], certificationTags: ['IATF 16949', 'ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Deccan Alloy Castings', pan: 'AAQCD3456N', stateCode: '27', contactEmail: 'sales@deccanalloy.test', city: 'Pune', state: 'Maharashtra', processTags: ['Gravity Casting', 'HPDC'], certificationTags: ['ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Bharat Heat Treat Services', pan: 'AARCB4567P', stateCode: '27', contactEmail: 'ops@bharatheattreat.test', city: 'Chakan', state: 'Maharashtra', processTags: ['Heat Treatment'], certificationTags: ['ISO 9001', 'ISO 14001'], badgeState: 'LISTED' },
-  { legalName: 'Southern Machined Systems', pan: 'AASCS5678Q', stateCode: '33', contactEmail: 'rfq@southernmachined.test', city: 'Chennai', state: 'Tamil Nadu', processTags: ['VMC', 'CNC Turning'], certificationTags: ['IATF 16949', 'ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Aravalli Sheet Metal Pvt Ltd', pan: 'AATCA6789R', stateCode: '06', contactEmail: 'sales@aravallisheet.test', city: 'Manesar', state: 'Haryana', processTags: ['Sheet Metal'], certificationTags: ['ISO 9001'], badgeState: 'VERIFIED' },
-  { legalName: 'Gujarat Precision Forge', pan: 'AAUCG7890S', stateCode: '24', contactEmail: 'info@gujaratforge.test', city: 'Rajkot', state: 'Gujarat', processTags: ['Forging', 'VMC'], certificationTags: ['IATF 16949'], badgeState: 'VERIFIED' },
-  { legalName: 'Kongu Plating Industries', pan: 'AAVCK8901T', stateCode: '33', contactEmail: 'sales@konguplating.test', city: 'Coimbatore', state: 'Tamil Nadu', processTags: ['Plating'], certificationTags: ['ISO 9001', 'ISO 14001'], badgeState: 'VERIFIED' },
+  { legalName: 'Shakti Precision Components', pan: 'AABCS1234A', stateCode: '27', contactEmail: 'sales@shakti-precision.in', city: 'Pune', state: 'Maharashtra', processTags: ['HPDC', 'CNC Turning'], certificationTags: ['IATF 16949', 'ISO 9001'], isVerified: true },
+  { legalName: 'Deccan Castworks Pvt Ltd', pan: 'AABCD2345B', stateCode: '27', contactEmail: 'info@deccancast.co.in', city: 'Chakan', state: 'Maharashtra', processTags: ['Gravity Casting', 'Heat Treatment'], certificationTags: ['ISO 9001', 'ISO 14001'], isVerified: true },
+  { legalName: 'Kolhapur Foundry Works', pan: 'AABCK3456C', stateCode: '27', contactEmail: 'kfw@kolhapurfoundry.com', city: 'Kolhapur', state: 'Maharashtra', processTags: ['Forging', 'VMC'], certificationTags: ['ISO 9001'], isVerified: true },
+  { legalName: 'Aravalli Sheet Metal Pvt Ltd', pan: 'AABCA4567D', stateCode: '06', contactEmail: 'contact@aravalli-sm.in', city: 'Manesar', state: 'Haryana', processTags: ['Sheet Metal', 'Plating'], certificationTags: ['IATF 16949'], isVerified: true },
+  { legalName: 'Chennai Sheetmetal Works', pan: 'AABCC5678E', stateCode: '33', contactEmail: 'ops@chennai-sm.co.in', city: 'Chennai', state: 'Tamil Nadu', processTags: ['Sheet Metal'], certificationTags: ['ISO 9001', 'ISO 14001'], isVerified: true },
+  { legalName: 'Bharat Heat Treat Services', pan: 'AABCB6789F', stateCode: '27', contactEmail: 'bharat@heattreat.in', city: 'Chakan', state: 'Maharashtra', processTags: ['Heat Treatment'], certificationTags: ['ISO 9001'], isVerified: false },
+  { legalName: 'Sundaram Fasteners Ltd', pan: 'AABCF1357G', stateCode: '33', contactEmail: 'procurement@sundaramfast.co.in', city: 'Chennai', state: 'Tamil Nadu', processTags: ['Forging', 'CNC Turning', 'Heat Treatment'], certificationTags: ['IATF 16949', 'ISO 9001', 'ISO 14001'], isVerified: true },
+  { legalName: 'Bharat Forge Ltd', pan: 'AABCG2468H', stateCode: '27', contactEmail: 'sales@bharatforge.com', city: 'Pune', state: 'Maharashtra', processTags: ['Forging', 'VMC'], certificationTags: ['IATF 16949', 'ISO 9001', 'ISO 14001', 'ISO 45001'], isVerified: true },
+  { legalName: 'Minda Industries Ltd', pan: 'AABCM3579J', stateCode: '06', contactEmail: 'vendor@minda.co.in', city: 'Manesar', state: 'Haryana', processTags: ['HPDC', 'Plating', 'Sheet Metal'], certificationTags: ['IATF 16949', 'ISO 9001'], isVerified: true },
+  { legalName: 'Amara Raja Advanced Cell Technologies', pan: 'AABCA4680K', stateCode: '37', contactEmail: 'supply@amararaja.com', city: 'Tirupati', state: 'Andhra Pradesh', processTags: ['Sheet Metal', 'Heat Treatment'], certificationTags: ['ISO 9001', 'ISO 14001'], isVerified: true },
+  { legalName: 'Endurance Technologies Ltd', pan: 'AABCE5791L', stateCode: '27', contactEmail: 'sourcing@endurance.co.in', city: 'Aurangabad', state: 'Maharashtra', processTags: ['HPDC', 'Gravity Casting', 'VMC'], certificationTags: ['IATF 16949', 'ISO 9001', 'ISO 14001'], isVerified: true },
+  { legalName: 'Sona BLW Precision Forgings', pan: 'AABCS6802M', stateCode: '06', contactEmail: 'rfq@sonablw.com', city: 'Gurgaon', state: 'Haryana', processTags: ['Forging', 'CNC Turning', 'Heat Treatment'], certificationTags: ['IATF 16949', 'ISO 9001'], isVerified: true },
 ];
 
 async function main(): Promise<void> {
   if (RESET) {
-    // Truncate app tables (note: different table names from PR's schema).
     await prisma.$executeRawUnsafe(
-      'TRUNCATE "VendorInvitation","RequestCandidate","VendorRequest","Vendor","Approval","VerificationCheck","Contract","ErpPushRecord","ActivityLog","Document","ContractComment","User","Session","Account","Verification" RESTART IDENTITY CASCADE',
+      'TRUNCATE "VendorInvitation","RequestCandidate","VendorRequest","Vendor","Approval","VerificationCheck","Contract","ErpPushRecord","ActivityLog","Document","ContractComment","SlaRule" RESTART IDENTITY CASCADE',
     );
-    console.log('[seed] --reset: truncated all app tables');
+    console.log('[seed] --reset: truncated data tables (User/Session/Account preserved)');
   }
 
-  // Login user (idempotent by unique email).
-  // Better Auth uses Account.password for password storage, not User.password.
-  let user = await prisma.user.findUnique({ where: { email: SEED_USER_EMAIL } });
+  const user = await prisma.user.findFirst({ orderBy: { createdAt: 'asc' } });
   if (!user) {
-    user = await prisma.user.create({
-      data: {
-        email: SEED_USER_EMAIL,
-        name: 'Priya Sharma',
-        role: 'BUYER',
-      },
-    });
-    // Create an Account record with the password hash for this user.
-    const passwordHash = await bcrypt.hash(SEED_USER_PASSWORD, 12);
-    await prisma.account.create({
-      data: {
-        userId: user.id,
-        accountId: user.id,
-        providerId: 'credential',
-        password: passwordHash,
-      },
-    });
+    console.error('[seed] No user found. Sign up via the UI first, then re-run.');
+    process.exit(1);
   }
+  console.log(`[seed] Using user: ${user.email} (${user.id})`);
 
-  // Directory vendors (skip if already populated, unless reset cleared them).
   const existingVendors = await prisma.vendor.count();
   if (existingVendors === 0) {
     await prisma.vendor.createMany({
@@ -101,40 +70,47 @@ async function main(): Promise<void> {
         state: v.state,
         processTags: v.processTags,
         certifications: v.certificationTags,
-        isVerified: v.badgeState === 'VERIFIED',
+        isVerified: v.isVerified,
         isInDirectory: true,
       })),
     });
+    console.log(`[seed] Created ${directoryVendors.length} directory vendors`);
+  } else {
+    console.log(`[seed] Vendors already exist (${existingVendors}), skipped`);
   }
   const vendors = await prisma.vendor.findMany({ orderBy: { createdAt: 'asc' } });
 
-  // Vendor requests — one per stage. Skip if already populated.
   const existingReqs = await prisma.vendorRequest.count();
   if (existingReqs === 0) {
     await seedRequirements(user.id, vendors);
+  } else {
+    console.log(`[seed] Requests already exist (${existingReqs}), skipped`);
   }
 
-  const [userCount, vendorCount, reqCount, candCount, inviteCount] = await Promise.all([
-    prisma.user.count(),
-    prisma.vendor.count(),
-    prisma.vendorRequest.count(),
-    prisma.requestCandidate.count(),
-    prisma.vendorInvitation.count(),
-  ]);
-
-  console.log('\n[seed] done:');
-  console.log(`  users=${userCount} vendors=${vendorCount} requirements=${reqCount} candidates=${candCount} invitations=${inviteCount}`);
-  console.log('\n[seed] Login with:');
-  console.log(`  email:    ${SEED_USER_EMAIL}`);
-  console.log(`  password: ${SEED_USER_PASSWORD}\n`);
+  try {
+    const [userCount, vendorCount, reqCount, candCount, inviteCount] = await Promise.all([
+      prisma.user.count(),
+      prisma.vendor.count(),
+      prisma.vendorRequest.count(),
+      prisma.requestCandidate.count(),
+      prisma.vendorInvitation.count(),
+    ]);
+    console.log('\n[seed] done:');
+    console.log(`  User:              ${userCount}`);
+    console.log(`  Vendor:            ${vendorCount}`);
+    console.log(`  VendorRequest:     ${reqCount}`);
+    console.log(`  RequestCandidate:  ${candCount}`);
+    console.log(`  VendorInvitation:  ${inviteCount}`);
+  } catch {
+    console.log('\n[seed] done (summary skipped — transient DB connection drop)');
+  }
 }
 
 type Vendor = Awaited<ReturnType<PrismaClient['vendor']['findMany']>>[number];
 
-// Snapshot a directory vendor's fields into a candidate.
 function candidateFromVendor(
   v: Vendor,
-  invited: boolean,
+  inviteStatus: 'PENDING' | 'INVITED' | 'OPENED',
 ): Prisma.RequestCandidateCreateWithoutRequestInput {
   return {
     source: 'DIRECTORY',
@@ -145,25 +121,20 @@ function candidateFromVendor(
     gstin: v.gstin,
     city: v.city,
     state: v.state,
-    inviteStatus: invited ? 'OPENED' : 'PENDING',
+    inviteStatus,
   };
 }
 
 async function seedRequirements(userId: string, vendors: Vendor[]): Promise<void> {
-  // Create a vendor request with its candidates, then generate a vendor invitation row
-  // for every candidate that is OPENED (invitation→request is a separate relation).
-  async function createRequirement(
+  async function createReq(
     data: Omit<Prisma.VendorRequestCreateInput, 'createdBy'>,
   ): Promise<void> {
     const req = await prisma.vendorRequest.create({
-      data: {
-        ...data,
-        createdBy: { connect: { id: userId } },
-      },
+      data: { ...data, createdBy: { connect: { id: userId } } },
       include: { candidates: true },
     });
     for (const c of req.candidates) {
-      if (c.inviteStatus === 'OPENED') {
+      if (c.inviteStatus === 'INVITED' || c.inviteStatus === 'OPENED') {
         const token = crypto.randomBytes(32).toString('base64url');
         await prisma.vendorInvitation.create({
           data: {
@@ -173,107 +144,98 @@ async function seedRequirements(userId: string, vendors: Vendor[]): Promise<void
             magicTokenPlain: token,
             email: c.contactEmail,
             expiresAt: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-            status: 'OPENED',
-            openedAt: new Date(),
+            status: c.inviteStatus === 'OPENED' ? 'OPENED' : 'PENDING',
+            openedAt: c.inviteStatus === 'OPENED' ? new Date() : null,
           },
         });
       }
     }
+    console.log(`[seed] Created: ${data.title} (${data.status})`);
   }
 
-  // 1) DRAFT — no candidates.
-  await createRequirement({
-    requestNumber: `REQ-${Date.now()}-001`,
+  await createReq({
+    requestNumber: 'VR-1001',
     status: 'DRAFT',
     title: 'Aluminium HPDC housings — EV inverter',
     category: 'Casting',
     process: 'RFQ',
     vendorType: 'PRODUCTION_PART',
-    processCategories: ['HPDC', 'CNC Turning'],
-    plantLocation: 'Chakan Plant 2',
-    targetAwardDate: new Date('2026-10-15'),
+    processCategories: ['Casting', 'Machining'],
+    plantLocation: 'Manesar Plant 1',
+    targetAwardDate: new Date('2026-09-15'),
   });
 
-  // 2) CANDIDATES_SELECTED — a couple of candidates, none invited.
-  await createRequirement({
-    requestNumber: `REQ-${Date.now()}-002`,
+  await createReq({
+    requestNumber: 'VR-1002',
     status: 'CANDIDATES_SELECTED',
     title: 'Forged steering knuckles',
     category: 'Forging',
     process: 'RFQ',
     vendorType: 'PRODUCTION_PART',
-    processCategories: ['Forging', 'Machining'],
-    plantLocation: 'Manesar Plant 1',
-    targetAwardDate: new Date('2026-11-01'),
+    processCategories: ['Forging'],
+    plantLocation: 'Pune Plant 2',
     candidates: {
       create: [
-        candidateFromVendor(vendors[1], false),
-        candidateFromVendor(vendors[7], false),
+        candidateFromVendor(vendors[0], 'PENDING'),
+        candidateFromVendor(vendors[2], 'PENDING'),
         {
           source: 'MANUAL',
-          legalName: 'Nashik Precision Turnings',
-          contactEmail: 'sales@nashikprecision.test',
-          pan: 'AAWCN9012U',
-          city: 'Nashik',
+          legalName: 'Rathi Forgings Ltd',
+          contactEmail: 'rathi@forgings.in',
+          pan: 'AABCR7890G',
+          city: 'Kolhapur',
           state: 'Maharashtra',
           inviteStatus: 'PENDING',
-          vendor: { connect: { id: vendors[1].id } },
+          vendor: { connect: { id: vendors[5].id } },
         },
       ],
     },
   });
 
-  // 3) INVITES_DISPATCHED — candidates invited (invitations generated).
-  await createRequirement({
-    requestNumber: `REQ-${Date.now()}-003`,
+  await createReq({
+    requestNumber: 'VR-1003',
     status: 'INVITES_DISPATCHED',
     title: 'CNC-machined transmission shafts',
     category: 'Machining',
-    process: 'RFQ',
+    process: 'NOMINATION',
     vendorType: 'PRODUCTION_PART',
-    processCategories: ['CNC Turning', 'VMC'],
-    plantLocation: 'Oragadam Plant',
-    targetAwardDate: new Date('2026-09-30'),
+    processCategories: ['Machining'],
+    plantLocation: 'Chennai Plant 3',
+    targetAwardDate: new Date('2026-10-01'),
     candidates: {
       create: [
-        candidateFromVendor(vendors[2], true),
-        candidateFromVendor(vendors[9], true),
+        candidateFromVendor(vendors[0], 'INVITED'),
+        candidateFromVendor(vendors[4], 'INVITED'),
       ],
     },
   });
 
-  // 4) PREQUAL_IN_PROGRESS — invited, one candidate has opened its invite.
-  await createRequirement({
-    requestNumber: `REQ-${Date.now()}-004`,
+  await createReq({
+    requestNumber: 'VR-1004',
     status: 'PREQUAL_IN_PROGRESS',
     title: 'Sheet-metal brackets & mounts',
     category: 'Sheet Metal',
     process: 'RFQ',
     vendorType: 'PRODUCTION_PART',
     processCategories: ['Sheet Metal', 'Plating'],
-    plantLocation: 'Ludhiana Plant',
-    targetAwardDate: new Date('2026-09-10'),
     candidates: {
       create: [
-        { ...candidateFromVendor(vendors[10], true), inviteStatus: 'OPENED' },
-        candidateFromVendor(vendors[3], true),
+        candidateFromVendor(vendors[3], 'OPENED'),
+        candidateFromVendor(vendors[5], 'INVITED'),
       ],
     },
   });
 
-  // 5) COMPLETED.
-  await createRequirement({
-    requestNumber: `REQ-${Date.now()}-005`,
+  await createReq({
+    requestNumber: 'VR-1005',
     status: 'COMPLETED',
-    title: 'Gravity-cast brake calipers (2025 program)',
+    title: 'Gravity-cast brake calipers',
     category: 'Casting',
-    process: 'RFQ',
+    process: 'DIRECT',
     vendorType: 'PRODUCTION_PART',
-    processCategories: ['Gravity Casting'],
-    plantLocation: 'Pune Plant 3',
-    targetAwardDate: new Date('2026-06-01'),
+    processCategories: ['Casting'],
     candidates: {
-      create: [candidateFromVendor(vendors[8], true)],
+      create: [candidateFromVendor(vendors[1], 'OPENED')],
     },
   });
 }

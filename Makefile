@@ -73,8 +73,8 @@ db-push: ## Block direct schema pushes; use db-migrate instead
 db-studio: ## Open Prisma Studio
 	cd $(ROOT_DIR) && npx prisma studio --schema=$(DB_SCHEMA)
 
-db-seed: ## Seed the database with test data
-	cd $(ROOT_DIR) && npx tsx --env-file=.env packages/db/prisma/seed.ts
+db-seed: ## Seed the database with test data; RESET=1 clears data tables first
+	cd $(ROOT_DIR) && npx tsx --env-file=.env packages/db/prisma/seed.ts $(if $(RESET),--reset,)
 
 # ── Type Checking and Tests ───────────────────────────────────
 

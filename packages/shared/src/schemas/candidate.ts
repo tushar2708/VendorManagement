@@ -64,6 +64,18 @@ export const addCandidatesSchema = z.object({
 });
 export type AddCandidatesInput = z.infer<typeof addCandidatesSchema>;
 
+// Update an existing candidate — all fields optional. Empty string clears the field.
+export const updateCandidateSchema = z.object({
+  legalName: z.string().trim().min(1).optional(),
+  contactEmail: z.string().trim().email().optional(),
+  contactPhone: z.string().trim().optional(),
+  pan: z.string().trim().transform((v) => v.toUpperCase()).refine((v) => v === '' || PAN_REGEX.test(v), 'PAN must look like AAAAA9999A').optional(),
+  gstin: z.string().trim().transform((v) => v.toUpperCase()).refine((v) => v === '' || GSTIN_REGEX.test(v), 'Invalid GSTIN format').optional(),
+  city: z.string().trim().optional(),
+  state: z.string().trim().optional(),
+});
+export type UpdateCandidateInput = z.infer<typeof updateCandidateSchema>;
+
 // Full requirement detail (requirement + its candidates).
 export const requirementDetailSchema = z.object({
   id: z.string(),
