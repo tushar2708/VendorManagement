@@ -7,6 +7,11 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserTier {
+  EXECUTIVE
+  LEADERSHIP
+}
+
 enum UserRole {
   BUYER
   VENDOR
@@ -183,6 +188,7 @@ model User {
   emailVerified Boolean   @default(false)
   image         String?
   role          UserRole  @default(BUYER)
+  tier          UserTier  @default(EXECUTIVE)
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]

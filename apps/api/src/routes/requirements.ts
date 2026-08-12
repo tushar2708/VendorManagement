@@ -126,6 +126,84 @@ requirementsRouter.get('/stats', async (req, res, next) => {
   }
 });
 
+requirementsRouter.get('/analytics', async (req, res, next) => {
+  try {
+    const userId = req.user!.userId;
+
+    const requests = await prisma.vendorRequest.findMany({
+      where: { createdById: userId },
+      select: { id: true, status: true, createdAt: true, updatedAt: true, vendorType: true, title: true, category: true },
+    });
+
+    // Pipeline funnel counts
+    const stepMap: Record<string, string> = {
+      DRAFT: 'Intake & invite', CANDIDATES_SELECTED: 'Intake & invite', INVITES_DISPATCHED: 'Intake & invite',
+      PREQUAL_IN_PROGRESS: 'Verification', PREQUAL_COMPLETE: 'Verification',
+      AWARDED: 'Award & full pack', FULL_PACK_SUBMITTED: 'Award & full pack',
+      DEEP_VERIFICATION: 'Governance', APPROVALS_IN_PROGRESS: 'Governance',
+      CONTRACT_REVIEW: 'Contract',
+      ERP_PUSH: 'Activated', COMPLETED: 'Activated', CANCELLED: 'Activated',
+    };
+    const funnel: Record<string, number> = {};
+    for (const step of ['Intake & invite', 'Verification', 'Award & full pack', 'Governance', 'Contract', 'Activated']) {
+      funnel[step] = 0;
+    }
+    for (const r of requests) {
+      const step = stepMap[r.status] ?? 'Intake & invite';
+      funnel[step]++;
+    }
+
+    // Vendor type breakdown
+    const vendorTypes: Record<string, number> = { PRODUCTION_PART: 0, INDIRECT_SERVICES: 0 };
+    for (const r of requests) {
+      if (r.vendorType === 'PRODUCTION_PART') vendorTypes.PRODUCTION_PART++;
+      else vendorTypes.INDIRECT_SERVICES++;
+    }
+
+    // Avg time to complete
+    const completed = requests.filter(r => r.status === 'COMPLETED');
+    const now = Date.now();
+    const avgDaysToOnboard = completed.length > 0
+      ? Math.round(completed.reduce((sum, r) => sum + Math.floor((now - r.createdAt.getTime()) / 86400000), 0) / completed.length)
+      : 0;
+
+    // Pass rate
+    const passedStatuses = new Set(['PREQUAL_COMPLETE', 'AWARDED', 'FULL_PACK_SUBMITTED', 'DEEP_VERIFICATION', 'APPROVALS_IN_PROGRESS', 'CONTRACT_REVIEW', 'ERP_PUSH', 'COMPLETED']);
+    const passed = requests.filter(r => passedStatuses.has(r.status)).length;
+    const passRate = requests.length > 0 ? Math.round((passed / requests.length) * 100) : 0;
+
+    // Vendor directory count
+    const directoryCount = await prisma.vendor.count({ where: { isInDirectory: true } });
+
+    // Recent completions (last 5)
+    const recentCompleted = await prisma.vendorRequest.findMany({
+      where: { createdById: userId, status: 'COMPLETED' },
+      orderBy: { updatedAt: 'desc' },
+      take: 5,
+      include: { candidates: { where: { isAwarded: true }, include: { vendor: { select: { name: true } } } } },
+    });
+    const recentCompletions = recentCompleted.map(r => ({
+      title: r.title ?? r.category,
+      vendorName: r.candidates[0]?.vendor?.name ?? '—',
+      days: Math.floor((now - r.createdAt.getTime()) / 86400000),
+      completedAt: r.updatedAt.toISOString(),
+    }));
+
+    res.json({
+      totalRequests: requests.length,
+      completedCount: completed.length,
+      avgDaysToOnboard,
+      passRate,
+      directoryCount,
+      funnel,
+      vendorTypes,
+      recentCompletions,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 interface RequirementRow {
   id: string;
   title: string | null;

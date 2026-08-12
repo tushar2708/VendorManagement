@@ -57,6 +57,34 @@ approvalsRouter.get('/', async (req, res, next) => {
   }
 });
 
+approvalsRouter.get('/analytics', async (req, res, next) => {
+  try {
+    const approvals = await prisma.approval.findMany({
+      where: {
+        status: 'PENDING',
+        OR: [
+          { assignedToId: req.user!.userId },
+          { request: { createdById: req.user!.userId } },
+        ],
+      },
+      select: { slaRisk: true },
+    });
+
+    const distribution: Record<string, number> = { ON_TRACK: 0, AT_RISK: 0, OVERDUE: 0 };
+    for (const a of approvals) {
+      distribution[a.slaRisk] = (distribution[a.slaRisk] ?? 0) + 1;
+    }
+
+    const slaComplianceRate = approvals.length > 0
+      ? Math.round((distribution.ON_TRACK / approvals.length) * 100)
+      : 100;
+
+    res.json({ distribution, total: approvals.length, slaComplianceRate });
+  } catch (error) {
+    next(error);
+  }
+});
+
 approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (req, res, next) => {
   try {
     const approval = await prisma.approval.findUnique({ where: { id: req.params.id as string } });

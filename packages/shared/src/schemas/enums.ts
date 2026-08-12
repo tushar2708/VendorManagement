@@ -3,6 +3,9 @@ import { z } from "zod";
 export const userRoleSchema = z.enum(["BUYER", "VENDOR", "ADMIN"]);
 export type UserRole = z.infer<typeof userRoleSchema>;
 
+export const userTierSchema = z.enum(["EXECUTIVE", "LEADERSHIP"]);
+export type UserTier = z.infer<typeof userTierSchema>;
+
 export const vendorTypeSchema = z.enum(["PRODUCTION_PART", "INDIRECT_SERVICES"]);
 export type VendorType = z.infer<typeof vendorTypeSchema>;
 

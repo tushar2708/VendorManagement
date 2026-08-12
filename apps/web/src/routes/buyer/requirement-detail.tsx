@@ -12,6 +12,8 @@ import { Button, Card, Spinner, cn } from '../../components/ui.js';
 import { PipelineStepper } from '../../components/organisms/PipelineStepper.js';
 import { ActivityItem } from '../../components/molecules/ActivityItem.js';
 import { Badge } from '../../components/atoms/Badge.js';
+import { useAuth } from '../../hooks/use-auth.js';
+import { canCreate } from '../../lib/permissions.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -175,6 +177,8 @@ function Ready({
   readonly onSelectChange: (ids: Set<string>) => void;
   readonly rowError: string | null;
 }): React.ReactElement {
+  const { user } = useAuth();
+  const canManageCandidates = canCreate(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE', 'candidates');
   const { title, status, partCategory, plantLocation, targetAwardDate, processCategories, candidates, whoseCourt, openDays } = detail;
   const pendingCount = candidates.filter((c) => c.inviteStatus === 'PENDING').length;
 
@@ -216,18 +220,20 @@ function Ready({
         <h2 className="text-lg font-semibold">
           Candidates <span className="text-slate-400">({candidates.length})</span>
         </h2>
-        <div className="flex items-center gap-3">
-          <Button variant="secondary" onClick={onAdd}>
-            Add candidate
-          </Button>
-          <Button
-            onClick={onSend}
-            disabled={pendingCount === 0}
-            title={pendingCount === 0 ? 'No candidates left to invite' : undefined}
-          >
-            Send invites{selectedIds.size > 0 ? ` (${selectedIds.size})` : pendingCount > 0 ? ` (${pendingCount})` : ''}
-          </Button>
-        </div>
+        {canManageCandidates && (
+          <div className="flex items-center gap-3">
+            <Button variant="secondary" onClick={onAdd}>
+              Add candidate
+            </Button>
+            <Button
+              onClick={onSend}
+              disabled={pendingCount === 0}
+              title={pendingCount === 0 ? 'No candidates left to invite' : undefined}
+            >
+              Send invites{selectedIds.size > 0 ? ` (${selectedIds.size})` : pendingCount > 0 ? ` (${pendingCount})` : ''}
+            </Button>
+          </div>
+        )}
       </div>
 
       {rowError && <p className="mt-3 rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">{rowError}</p>}
@@ -236,9 +242,11 @@ function Ready({
         <Card className="mt-4 grid place-items-center gap-2 p-12 text-center">
           <p className="text-base font-semibold">No candidates yet</p>
           <p className="max-w-sm text-sm text-slate-500">Add vendors from the verified directory or enter one manually to start.</p>
-          <Button className="mt-2" onClick={onAdd}>
-            Add candidate
-          </Button>
+          {canManageCandidates && (
+            <Button className="mt-2" onClick={onAdd}>
+              Add candidate
+            </Button>
+          )}
         </Card>
       ) : (
         <Card className="mt-4 overflow-hidden">
@@ -276,7 +284,7 @@ function Ready({
                   return (
                     <tr key={c.id} className="border-b border-slate-100 last:border-0 hover:bg-slate-50/60">
                       <td className="w-12 px-4 py-3">
-                        {canEdit && (
+                        {canEdit && canManageCandidates && (
                           <input
                             type="checkbox"
                             checked={selectedIds.has(c.id)}
@@ -317,7 +325,7 @@ function Ready({
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
-                          {canEdit && (
+                          {canEdit && canManageCandidates && (
                             <button
                               type="button"
                               onClick={() => onEdit(c)}
@@ -331,18 +339,20 @@ function Ready({
                               </svg>
                             </button>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => onRemove(c)}
-                            disabled={!canRemove}
-                            title={canRemove ? 'Remove candidate' : "Invited candidates can't be removed"}
-                            className={cn(
-                              'rounded-md px-2 py-1 text-xs font-medium transition-colors',
-                              canRemove ? 'text-rose-600 hover:bg-rose-50' : 'cursor-not-allowed text-slate-300',
-                            )}
-                          >
-                            Remove
-                          </button>
+                          {canManageCandidates && (
+                            <button
+                              type="button"
+                              onClick={() => onRemove(c)}
+                              disabled={!canRemove}
+                              title={canRemove ? 'Remove candidate' : "Invited candidates can't be removed"}
+                              className={cn(
+                                'rounded-md px-2 py-1 text-xs font-medium transition-colors',
+                                canRemove ? 'text-rose-600 hover:bg-rose-50' : 'cursor-not-allowed text-slate-300',
+                              )}
+                            >
+                              Remove
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
