@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react';
 import { getSlaRules, updateSlaRule } from '../../lib/requirements-api.js';
 import { errorMessage } from '../../lib/auth-api.js';
 import { Card, Spinner, Button } from '../../components/ui.js';
+import { Toast } from '../../components/atoms/Toast.js';
 import { SlaRuleRow } from '../../components/molecules/SlaRuleRow.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
+import { useToast } from '../../hooks/use-toast.js';
 
 interface SlaRule { id: string; stage: string; slaDays: number; escalateAfterBreach: boolean; }
 
@@ -26,6 +28,7 @@ type LoadState =
 export function SlaSettingsPage(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const headingRef = useTextReveal<HTMLHeadingElement>();
+  const { toast, showToast, hideToast } = useToast();
 
   function load(): void {
     setState({ kind: 'loading' });
@@ -39,6 +42,7 @@ export function SlaSettingsPage(): React.ReactElement {
   async function handleSave(id: string, slaDays: number, escalateAfterBreach: boolean): Promise<void> {
     await updateSlaRule(id, { slaDays, escalateAfterBreach });
     load();
+    showToast('SLA rule saved', 'success');
   }
 
   return (
@@ -83,6 +87,7 @@ export function SlaSettingsPage(): React.ReactElement {
           </table>
         </Card>
       )}
+      {toast && <Toast message={toast.message} variant={toast.variant} onClose={hideToast} />}
     </div>
   );
 }

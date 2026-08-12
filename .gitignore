@@ -53,3 +53,11 @@ secrets/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Animmaster demo assets (binary files from downloaded code.zip)
+apps/web/src/components/animmaster/**/public/
+apps/web/src/components/animmaster/**/img/
+apps/web/src/components/animmaster/**/*.webp
+apps/web/src/components/animmaster/**/*.jpg
+apps/web/src/components/animmaster/**/*.woff2
+apps/web/src/components/animmaster/**/*.mp4

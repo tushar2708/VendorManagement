@@ -109,7 +109,7 @@ directoryRouter.get('/:id', async (req, res, next) => {
         city: vendor.city,
         state: vendor.state,
         processTags: vendor.processTags,
-        certifications: vendor.certifications,
+        certificationTags: vendor.certifications,
         prequalScore: vendor.prequalScore,
         isVerified: vendor.isVerified,
         badgeState: isStale ? 'STALE' : vendor.isVerified ? 'VERIFIED' : 'LISTED',

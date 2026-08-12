@@ -21,3 +21,19 @@ export const STATUS_STYLE: Record<RequestStatus, StatusStyle> = {
   COMPLETED: { label: 'Completed', badge: 'bg-emerald-50 text-emerald-700 ring-emerald-200', dot: 'bg-emerald-500' },
   CANCELLED: { label: 'Cancelled', badge: 'bg-rose-50 text-rose-700 ring-rose-200', dot: 'bg-rose-500' },
 };
+
+export function getStatusLabel(status: RequestStatus): string {
+  return STATUS_STYLE[status]?.label ?? status;
+}
+
+export function getStatusVariant(
+  status: RequestStatus,
+): 'success' | 'warning' | 'danger' | 'info' | 'neutral' {
+  const s = STATUS_STYLE[status];
+  if (!s) return 'neutral';
+  if (s.dot.includes('emerald')) return 'success';
+  if (s.dot.includes('amber')) return 'warning';
+  if (s.dot.includes('rose')) return 'danger';
+  if (s.dot.includes('sky') || s.dot.includes('violet')) return 'info';
+  return 'neutral';
+}

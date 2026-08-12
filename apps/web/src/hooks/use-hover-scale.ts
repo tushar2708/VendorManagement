@@ -1,25 +1,68 @@
 import { useRef, useEffect } from 'react';
-import { gsap } from 'gsap';
 
-export function useHoverScale<T extends HTMLElement>(scale = 1.02): React.RefObject<T | null> {
+interface UseHoverScaleOptions {
+  readonly speed?: number;
+  readonly reversed?: boolean;
+}
+
+export function useHoverScale<T extends HTMLElement>(
+  options: UseHoverScaleOptions = {},
+): React.RefObject<T | null> {
   const ref = useRef<T>(null);
 
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
+    const section = ref.current;
+    if (!section) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const enter = () => gsap.to(el, { scale, boxShadow: '0 8px 25px rgba(0,0,0,0.1)', duration: 0.25, ease: 'power2.out' });
-    const leave = () => gsap.to(el, { scale: 1, boxShadow: '0 1px 3px rgba(0,0,0,0.05)', duration: 0.25, ease: 'power2.out' });
+    const children = section.children;
+    if (children.length < 2) return;
 
-    el.addEventListener('mouseenter', enter);
-    el.addEventListener('mouseleave', leave);
+    const firstChild = children[0] as HTMLElement;
+    const secondChild = children[1] as HTMLElement;
+    const reversed = options.reversed ?? false;
+    const speed = options.speed ?? 0.15;
+
+    let rafId: number | null = null;
+    let xPercent = reversed ? 100 : 0;
+    let currentXPercent = reversed ? 100 : 0;
+
+    const animateWidths = () => {
+      const delta = xPercent - currentXPercent;
+      currentXPercent = currentXPercent + delta * speed;
+
+      const firstWidth = 66.66 - currentXPercent * 0.33;
+      const secondWidth = 33.33 + currentXPercent * 0.33;
+
+      firstChild.style.width = `${firstWidth}%`;
+      secondChild.style.width = `${secondWidth}%`;
+
+      if (Math.round(currentXPercent) === Math.round(xPercent)) {
+        if (rafId !== null) {
+          cancelAnimationFrame(rafId);
+        }
+        rafId = null;
+      } else {
+        rafId = requestAnimationFrame(animateWidths);
+      }
+    };
+
+    const onMouseMove = (event: MouseEvent) => {
+      xPercent = (event.clientX / window.innerWidth) * 100;
+      if (!rafId) {
+        rafId = requestAnimationFrame(animateWidths);
+      }
+    };
+
+    section.addEventListener('mousemove', onMouseMove);
 
     return () => {
-      el.removeEventListener('mouseenter', enter);
-      el.removeEventListener('mouseleave', leave);
+      section.removeEventListener('mousemove', onMouseMove);
+      if (rafId !== null) {
+        cancelAnimationFrame(rafId);
+      }
     };
-  }, [scale]);
+  }, [options.speed, options.reversed]);
 
   return ref;
 }
