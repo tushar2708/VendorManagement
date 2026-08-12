@@ -7,6 +7,8 @@ import { Toast } from '../../components/atoms/Toast.js';
 import { EmptyState } from '../../components/molecules/EmptyState.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
 import { useToast } from '../../hooks/use-toast.js';
+import { useAuth } from '../../hooks/use-auth.js';
+import { canDecide } from '../../lib/permissions.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -27,6 +29,8 @@ export function ApproverQueuePage(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const headingRef = useTextReveal<HTMLHeadingElement>();
   const { toast, showToast, hideToast } = useToast();
+  const { user } = useAuth();
+  const canMakeDecisions = canDecide(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
 
   function load(): void {
     setState({ kind: 'loading' });
@@ -84,10 +88,12 @@ export function ApproverQueuePage(): React.ReactElement {
                     <Badge variant={RISK_VARIANT[a.slaRisk] ?? 'neutral'}>{a.slaRisk.replace('_', ' ')}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'REJECTED')}>Reject</Button>
-                      <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
-                    </div>
+                    {canMakeDecisions && (
+                      <div className="flex items-center gap-2 justify-end">
+                        <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'REJECTED')}>Reject</Button>
+                        <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
+                      </div>
+                    )}
                   </td>
                 </tr>
               ))}

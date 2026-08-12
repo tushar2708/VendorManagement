@@ -105,7 +105,7 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
     const created = (await authResponse.json()) as { user: { id: string } };
 
     await prisma.$transaction([
-      prisma.user.update({ where: { id: created.user.id }, data: { role: 'VENDOR' } }),
+      prisma.user.update({ where: { id: created.user.id }, data: { role: 'VENDOR', tier: 'EXECUTIVE' } }),
       prisma.vendor.update({ where: { id: invitation.vendor.id }, data: { userId: created.user.id } }),
       prisma.vendorInvitation.update({
         where: { id: invitation.id },

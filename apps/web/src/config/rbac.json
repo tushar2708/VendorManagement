@@ -1,0 +1,86 @@
+{
+  "roles": {
+    "BUYER": {
+      "tiers": {
+        "EXECUTIVE": {
+          "defaultView": "executive",
+          "canSwitchView": false,
+          "permissions": {
+            "requirements": { "create": true, "read": true, "update": true, "delete": true },
+            "candidates": { "create": true, "read": true, "update": true, "delete": true },
+            "invites": { "create": true, "read": true },
+            "directory": { "read": true },
+            "approvals": { "read": true, "decide": true },
+            "slaRules": { "read": true, "update": true },
+            "scoring": { "read": true, "update": true },
+            "contracts": { "read": true, "sign": true },
+            "activity": { "read": true }
+          }
+        },
+        "LEADERSHIP": {
+          "defaultView": "leadership",
+          "canSwitchView": true,
+          "permissions": {
+            "requirements": { "create": false, "read": true, "update": false, "delete": false },
+            "candidates": { "create": false, "read": true, "update": false, "delete": false },
+            "invites": { "create": false, "read": true },
+            "directory": { "read": true },
+            "approvals": { "read": true, "decide": false },
+            "slaRules": { "read": true, "update": false },
+            "scoring": { "read": true, "update": false },
+            "contracts": { "read": true, "sign": false },
+            "activity": { "read": true },
+            "analytics": { "read": true }
+          }
+        }
+      }
+    },
+    "VENDOR": {
+      "tiers": {
+        "EXECUTIVE": {
+          "defaultView": "executive",
+          "canSwitchView": false,
+          "permissions": {
+            "onboarding": { "read": true },
+            "prequal": { "read": true, "submit": true },
+            "documents": { "read": true, "upload": true },
+            "contract": { "read": true, "sign": true },
+            "profile": { "read": true, "update": true }
+          }
+        },
+        "LEADERSHIP": {
+          "defaultView": "leadership",
+          "canSwitchView": true,
+          "permissions": {
+            "onboarding": { "read": true },
+            "prequal": { "read": true, "submit": false },
+            "documents": { "read": true, "upload": false },
+            "contract": { "read": true, "sign": false },
+            "profile": { "read": true, "update": false },
+            "analytics": { "read": true }
+          }
+        }
+      }
+    },
+    "ADMIN": {
+      "tiers": {
+        "EXECUTIVE": {
+          "defaultView": "executive",
+          "canSwitchView": true,
+          "permissions": {
+            "requirements": { "create": true, "read": true, "update": true, "delete": true },
+            "candidates": { "create": true, "read": true, "update": true, "delete": true },
+            "invites": { "create": true, "read": true },
+            "directory": { "read": true },
+            "approvals": { "read": true, "decide": true },
+            "slaRules": { "read": true, "update": true },
+            "scoring": { "read": true, "update": true },
+            "contracts": { "read": true, "sign": true },
+            "activity": { "read": true },
+            "analytics": { "read": true }
+          }
+        }
+      }
+    }
+  }
+}

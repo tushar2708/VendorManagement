@@ -5,6 +5,7 @@ export interface AuthUser {
   name: string;
   email: string;
   role: string;
+  tier: string;
   image: string | null;
 }
 
@@ -24,12 +25,12 @@ export async function login(email: string, password: string): Promise<AuthSessio
   return response.json();
 }
 
-export async function signup(name: string, email: string, password: string): Promise<AuthSession> {
+export async function signup(name: string, email: string, password: string, tier: string = 'EXECUTIVE'): Promise<AuthSession> {
   const response = await fetch(`${apiBaseUrl}/api/auth/sign-up/email`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     credentials: "include",
-    body: JSON.stringify({ name, email, password }),
+    body: JSON.stringify({ name, email, password, tier }),
   });
   if (!response.ok) throw new Error("Signup failed");
   return response.json();

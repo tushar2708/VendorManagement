@@ -5,6 +5,9 @@ import { errorMessage } from '../../lib/auth-api.js';
 import { Card, Spinner, Button } from '../../components/ui.js';
 import { ProgressDot } from '../../components/atoms/ProgressDot.js';
 import { Badge } from '../../components/atoms/Badge.js';
+import { useAuth } from '../../hooks/use-auth.js';
+import { getDefaultView } from '../../lib/permissions.js';
+import { VendorLeadershipDashboard } from './leadership-dashboard.js';
 
 const STEPS = ['Registration', 'Identity verified', 'Documents uploaded', 'Under review', 'Contract signing', 'Onboarded'];
 
@@ -25,7 +28,7 @@ function currentStepIndex(data: VendorOnboarding): number {
   return 1;
 }
 
-export function VendorDashboard(): React.ReactElement {
+export function VendorExecutiveDashboard(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
 
   function load(): void {
@@ -102,4 +105,14 @@ export function VendorDashboard(): React.ReactElement {
       </Card>
     </div>
   );
+}
+
+export function VendorDashboard(): React.ReactElement {
+  const { user } = useAuth();
+  const view = getDefaultView(user?.role ?? 'VENDOR', user?.tier ?? 'EXECUTIVE');
+
+  if (view === 'leadership') {
+    return <VendorLeadershipDashboard />;
+  }
+  return <VendorExecutiveDashboard />;
 }

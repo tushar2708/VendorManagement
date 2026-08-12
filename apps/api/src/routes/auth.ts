@@ -17,6 +17,12 @@ export const auth = betterAuth({
         defaultValue: "BUYER",
         input: false,
       },
+      tier: {
+        type: "string",
+        required: false,
+        defaultValue: "EXECUTIVE",
+        input: true,
+      },
     },
   },
 });

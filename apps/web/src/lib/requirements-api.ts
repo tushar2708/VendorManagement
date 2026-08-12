@@ -78,3 +78,37 @@ export async function updateScoring(requirementId: string, criteria: { name: str
 export async function awardCandidate(requirementId: string, candidateId: string): Promise<void> {
   await http.post(`/api/requirements/${requirementId}/award`, { candidateId });
 }
+
+export interface RecentCompletion {
+  title: string;
+  vendorName: string;
+  days: number;
+  completedAt: string;
+}
+
+export interface RequirementAnalytics {
+  totalRequests: number;
+  completedCount: number;
+  avgDaysToOnboard: number;
+  passRate: number;
+  directoryCount: number;
+  funnel: Record<string, number>;
+  vendorTypes: Record<string, number>;
+  recentCompletions: RecentCompletion[];
+}
+
+export async function getRequirementAnalytics(): Promise<RequirementAnalytics> {
+  const response = await http.get('/api/requirements/analytics');
+  return response.data;
+}
+
+export interface ApprovalAnalytics {
+  distribution: Record<string, number>;
+  total: number;
+  slaComplianceRate: number;
+}
+
+export async function getApprovalAnalytics(): Promise<ApprovalAnalytics> {
+  const response = await http.get('/api/approvals/analytics');
+  return response.data;
+}

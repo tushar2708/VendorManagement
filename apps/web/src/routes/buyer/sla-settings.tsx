@@ -6,6 +6,8 @@ import { Toast } from '../../components/atoms/Toast.js';
 import { SlaRuleRow } from '../../components/molecules/SlaRuleRow.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
 import { useToast } from '../../hooks/use-toast.js';
+import { useAuth } from '../../hooks/use-auth.js';
+import { canUpdate } from '../../lib/permissions.js';
 
 interface SlaRule { id: string; stage: string; slaDays: number; escalateAfterBreach: boolean; }
 
@@ -29,6 +31,8 @@ export function SlaSettingsPage(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const headingRef = useTextReveal<HTMLHeadingElement>();
   const { toast, showToast, hideToast } = useToast();
+  const { user } = useAuth();
+  const canEditRules = canUpdate(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE', 'slaRules');
 
   function load(): void {
     setState({ kind: 'loading' });
@@ -81,6 +85,7 @@ export function SlaSettingsPage(): React.ReactElement {
                   slaDays={rule.slaDays}
                   escalateAfterBreach={rule.escalateAfterBreach}
                   onSave={(days, esc) => handleSave(rule.id, days, esc)}
+                  readonly={!canEditRules}
                 />
               ))}
             </tbody>

@@ -9,13 +9,16 @@ import { StatsBar } from '../../components/organisms/StatsBar.js';
 import { RequestCard } from '../../components/molecules/RequestCard.js';
 import { useGridReveal } from '../../hooks/use-grid-reveal.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
+import { useAuth } from '../../hooks/use-auth.js';
+import { getDefaultView } from '../../lib/permissions.js';
+import { BuyerLeadershipDashboard } from './leadership-dashboard.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
   | { readonly kind: 'error'; readonly message: string }
   | { readonly kind: 'ready'; readonly requirements: RequirementSummary[]; readonly stats: RequirementStats };
 
-export function BuyerDashboard(): React.ReactElement {
+export function BuyerExecutiveDashboard(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const { ref: listRef } = useGridReveal<HTMLDivElement>();
   const headingRef = useTextReveal<HTMLHeadingElement>();
@@ -86,4 +89,14 @@ export function BuyerDashboard(): React.ReactElement {
       )}
     </div>
   );
+}
+
+export function BuyerDashboard(): React.ReactElement {
+  const { user } = useAuth();
+  const view = getDefaultView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
+
+  if (view === 'leadership') {
+    return <BuyerLeadershipDashboard />;
+  }
+  return <BuyerExecutiveDashboard />;
 }
