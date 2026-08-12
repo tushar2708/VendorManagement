@@ -88,12 +88,10 @@ export function ApproverQueuePage(): React.ReactElement {
                     <Badge variant={RISK_VARIANT[a.slaRisk] ?? 'neutral'}>{a.slaRisk.replace('_', ' ')}</Badge>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    {canMakeDecisions && (
-                      <div className="flex items-center gap-2 justify-end">
-                        <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'REJECTED')}>Reject</Button>
-                        <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
-                      </div>
-                    )}
+                    <div className="flex items-center gap-2 justify-end">
+                      <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'REJECTED')}>Reject</Button>
+                      <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
+                    </div>
                   </td>
                 </tr>
               ))}

@@ -25,7 +25,7 @@
             "candidates": { "create": false, "read": true, "update": false, "delete": false },
             "invites": { "create": false, "read": true },
             "directory": { "read": true },
-            "approvals": { "read": true, "decide": false },
+            "approvals": { "read": true, "decide": true },
             "slaRules": { "read": true, "update": false },
             "scoring": { "read": true, "update": false },
             "contracts": { "read": true, "sign": false },
