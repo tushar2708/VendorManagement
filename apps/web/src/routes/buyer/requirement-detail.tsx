@@ -4,6 +4,7 @@ import type { ActivityListResponse, Candidate, InviteStatus, RequestStatus, Requ
 import { getActivity, getRequirement, removeCandidate } from '../../lib/candidates-api.js';
 import { errorMessage } from '../../lib/auth-api.js';
 import { formatDate } from '../../lib/format.js';
+import { getStatusLabel, getStatusVariant } from '../../lib/stage.js';
 import { AddCandidateModal } from '../../components/AddCandidateModal.js';
 import { EditCandidateModal } from '../../components/EditCandidateModal.js';
 import { SendInvitesModal } from '../../components/SendInvitesModal.js';
@@ -11,38 +12,6 @@ import { Button, Card, Spinner, cn } from '../../components/ui.js';
 import { PipelineStepper } from '../../components/organisms/PipelineStepper.js';
 import { ActivityItem } from '../../components/molecules/ActivityItem.js';
 import { Badge } from '../../components/atoms/Badge.js';
-
-const STATUS_BADGE_VARIANT: Record<RequestStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
-  DRAFT: 'neutral',
-  CANDIDATES_SELECTED: 'info',
-  INVITES_DISPATCHED: 'info',
-  PREQUAL_IN_PROGRESS: 'warning',
-  PREQUAL_COMPLETE: 'warning',
-  AWARDED: 'success',
-  FULL_PACK_SUBMITTED: 'info',
-  DEEP_VERIFICATION: 'warning',
-  APPROVALS_IN_PROGRESS: 'warning',
-  CONTRACT_REVIEW: 'info',
-  ERP_PUSH: 'info',
-  COMPLETED: 'success',
-  CANCELLED: 'danger',
-};
-
-const STATUS_LABEL: Record<RequestStatus, string> = {
-  DRAFT: 'Draft',
-  CANDIDATES_SELECTED: 'Candidates selected',
-  INVITES_DISPATCHED: 'Invites sent',
-  PREQUAL_IN_PROGRESS: 'Pre-qualification in progress',
-  PREQUAL_COMPLETE: 'Pre-qualification complete',
-  AWARDED: 'Awarded',
-  FULL_PACK_SUBMITTED: 'Full pack submitted',
-  DEEP_VERIFICATION: 'Deep verification',
-  APPROVALS_IN_PROGRESS: 'Approvals in progress',
-  CONTRACT_REVIEW: 'Contract review',
-  ERP_PUSH: 'ERP push',
-  COMPLETED: 'Completed',
-  CANCELLED: 'Cancelled',
-};
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -215,8 +184,8 @@ function Ready({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-            <Badge variant={STATUS_BADGE_VARIANT[status] ?? 'neutral'}>
-              {STATUS_LABEL[status] ?? status}
+            <Badge variant={getStatusVariant(status)}>
+              {getStatusLabel(status)}
             </Badge>
             <span className="rounded-md border border-slate-200 px-2.5 py-1 text-xs">
               <span className="text-slate-400 uppercase text-[10px]">Whose court</span>

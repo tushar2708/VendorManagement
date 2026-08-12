@@ -25,8 +25,6 @@ export function VendorDirectoryPage(): React.ReactElement {
       .catch((error: unknown) => setState({ kind: 'error', message: errorMessage(error, 'Could not load directory.') }));
   }
 
-  useEffect(() => { load(); }, []);
-
   useEffect(() => {
     const timer = setTimeout(() => load(search), 300);
     return () => clearTimeout(timer);

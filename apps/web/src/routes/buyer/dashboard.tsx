@@ -17,7 +17,7 @@ type LoadState =
 
 export function BuyerDashboard(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
-  const listRef = useGridReveal<HTMLDivElement>();
+  const { ref: listRef } = useGridReveal<HTMLDivElement>();
   const headingRef = useTextReveal<HTMLHeadingElement>();
 
   function load(): void {

@@ -56,7 +56,11 @@ scoringRouter.get('/:id/scoring', async (req, res, next) => {
 
 scoringRouter.patch('/:id/scoring', validateBody(updateCriteriaSchema), async (req, res, next) => {
   try {
+    const userId = req.user!.userId;
     const id = req.params.id as string;
+    const requirement = await prisma.vendorRequest.findFirst({ where: { id, createdById: userId } });
+    if (!requirement) { res.status(404).json({ error: 'Requirement not found' }); return; }
+
     const { criteria } = req.body as z.infer<typeof updateCriteriaSchema>;
     for (const c of criteria) {
       await prisma.scoringCriterion.upsert({
@@ -83,8 +87,12 @@ scoringRouter.post('/:id/award', validateBody(awardSchema), async (req, res, nex
     assertTransition(requirement.status, nextStatus);
 
     await prisma.$transaction(async (tx) => {
+      const candidate = await tx.requestCandidate.findFirst({ where: { id: candidateId, requestId: id } });
+      if (!candidate) {
+        throw new Error('Candidate not found on this requirement');
+      }
       await tx.requestCandidate.updateMany({ where: { requestId: id }, data: { isAwarded: false } });
-      await tx.requestCandidate.update({ where: { id: candidateId }, data: { isAwarded: true } });
+      await tx.requestCandidate.update({ where: { id: candidate.id }, data: { isAwarded: true } });
       await tx.vendorRequest.update({ where: { id }, data: { status: nextStatus } });
     });
 

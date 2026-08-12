@@ -3,8 +3,10 @@ import { getApprovals, decideApproval, type ApprovalItem } from '../../lib/requi
 import { errorMessage } from '../../lib/auth-api.js';
 import { Card, Spinner, Button } from '../../components/ui.js';
 import { Badge } from '../../components/atoms/Badge.js';
+import { Toast } from '../../components/atoms/Toast.js';
 import { EmptyState } from '../../components/molecules/EmptyState.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
+import { useToast } from '../../hooks/use-toast.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -24,6 +26,7 @@ const RISK_VARIANT: Record<string, 'success' | 'warning' | 'danger'> = {
 export function ApproverQueuePage(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const headingRef = useTextReveal<HTMLHeadingElement>();
+  const { toast, showToast, hideToast } = useToast();
 
   function load(): void {
     setState({ kind: 'loading' });
@@ -37,6 +40,7 @@ export function ApproverQueuePage(): React.ReactElement {
   async function handleDecide(id: string, decision: string): Promise<void> {
     await decideApproval(id, { status: decision });
     load();
+    showToast('Decision recorded', 'success');
   }
 
   return (
@@ -91,6 +95,7 @@ export function ApproverQueuePage(): React.ReactElement {
           </table>
         </Card>
       )}
+      {toast && <Toast message={toast.message} variant={toast.variant} onClose={hideToast} />}
     </div>
   );
 }

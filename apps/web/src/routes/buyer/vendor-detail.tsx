@@ -85,7 +85,7 @@ export function VendorDetailPage(): React.ReactElement {
           <p className="mt-1 text-sm text-slate-500">Run against the PAN, GST and Udyam records.</p>
           <div className="mt-4 space-y-3">
             {verificationChecks.map((vc) => (
-              <VerificationRow key={vc.id} type={vc.type} description={vc.notes || `Auto-verified via ${vc.type} API`} status={vc.status as any} />
+              <VerificationRow key={vc.id} type={vc.type} description={vc.notes || `Auto-verified via ${vc.type} API`} status={vc.status as 'PASS' | 'PARTIAL_MATCH' | 'FAIL' | 'PENDING' | 'IN_PROGRESS'} />
             ))}
           </div>
         </Card>

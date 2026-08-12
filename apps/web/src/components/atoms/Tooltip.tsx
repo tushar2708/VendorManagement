@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useId } from 'react';
 import { cn } from '../ui.js';
 
 interface TooltipProps {
@@ -9,14 +9,27 @@ interface TooltipProps {
 
 export function Tooltip({ content, children, side = 'top' }: TooltipProps): React.ReactElement {
   const [show, setShow] = useState(false);
+  const tooltipId = useId();
+
   return (
-    <div className="relative inline-flex" onMouseEnter={() => setShow(true)} onMouseLeave={() => setShow(false)}>
+    <div
+      className="relative inline-flex"
+      onMouseEnter={() => setShow(true)}
+      onMouseLeave={() => setShow(false)}
+      onFocus={() => setShow(true)}
+      onBlur={() => setShow(false)}
+      aria-describedby={show ? tooltipId : undefined}
+    >
       {children}
       {show && (
-        <div className={cn(
-          'absolute z-50 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow-lg',
-          side === 'top' ? 'bottom-full left-1/2 mb-1 -translate-x-1/2' : 'top-full left-1/2 mt-1 -translate-x-1/2',
-        )}>
+        <div
+          id={tooltipId}
+          role="tooltip"
+          className={cn(
+            'absolute z-50 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs text-white shadow-lg',
+            side === 'top' ? 'bottom-full left-1/2 mb-1 -translate-x-1/2' : 'top-full left-1/2 mt-1 -translate-x-1/2',
+          )}
+        >
           {content}
         </div>
       )}
