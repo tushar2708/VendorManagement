@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { Candidate, InviteResult, RequirementDetail } from '@vendor-management/shared';
-import { dispatchInvites } from '../lib/candidates-api.js';
+import { dispatchInvites, getRequirement } from '../lib/candidates-api.js';
 import { errorMessage } from '../lib/auth-api.js';
 import { Modal } from './Modal.js';
 import { Button, cn } from './ui.js';
@@ -39,7 +39,9 @@ export function SendInvitesModal({
       const candidateIds = selectedIds.size > 0 ? [...selectedIds] : undefined;
       const response = await dispatchInvites(requirementId, candidateIds);
       setResults(response.results);
-      onDispatched(response.requirement);
+      // Fetch the full requirement detail for the callback
+      const detail = await getRequirement(requirementId);
+      onDispatched(detail);
     } catch (e: unknown) {
       setError(errorMessage(e, 'Could not send invites.'));
     } finally {

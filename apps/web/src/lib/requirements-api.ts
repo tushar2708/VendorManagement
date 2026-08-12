@@ -37,7 +37,7 @@ export async function updateSlaRule(id: string, data: { slaDays?: number; escala
 export interface ApprovalItem {
   id: string; stage: string; status: string; slaRisk: string;
   ageDays: number; slaDays: number; vendorName: string; vendorEmail: string;
-  assignedToName: string | null; requestId: string | null;
+  assignedToName: string | null; requestId: string | null; linkId: string;
 }
 
 export async function getApprovals(status?: string): Promise<ApprovalItem[]> {

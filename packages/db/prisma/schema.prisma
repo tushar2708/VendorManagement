@@ -29,30 +29,9 @@ enum RequestProcess {
   DIRECT
 }
 
-enum RequestStatus {
-  DRAFT
-  CANDIDATES_SELECTED
-  INVITES_DISPATCHED
-  PREQUAL_IN_PROGRESS
-  PREQUAL_COMPLETE
-  AWARDED
-  FULL_PACK_SUBMITTED
-  DEEP_VERIFICATION
-  APPROVALS_IN_PROGRESS
-  CONTRACT_REVIEW
-  ERP_PUSH
-  COMPLETED
-  CANCELLED
-}
-
 enum CandidateSource {
   MANUAL
   DIRECTORY
-}
-
-enum InviteChannel {
-  EMAIL
-  WHATSAPP
 }
 
 enum InviteStatus {
@@ -61,49 +40,6 @@ enum InviteStatus {
   OPENED
   REGISTERED
   EXPIRED
-}
-
-enum CandidateStatus {
-  SELECTED
-  INVITED
-  PREQUAL_SUBMITTED
-  APPROVED
-  REJECTED
-  AWARDED
-  WARM_POOL
-}
-
-enum VerificationCheckType {
-  PAN
-  GSTIN
-  UDYAM
-  BANK_PENNY_DROP
-  COMPANY_FILINGS
-  DIRECTOR_UBO_SCREENING
-}
-
-enum VerificationCheckStatus {
-  PENDING
-  IN_PROGRESS
-  PASS
-  PARTIAL_MATCH
-  FAIL
-  MANUAL_OVERRIDE
-}
-
-enum DocumentCategory {
-  BANK_DETAILS
-  STATUTORY
-  LEGAL
-  IDENTITY
-  CAPABILITY
-}
-
-enum DocumentStatus {
-  PENDING
-  UPLOADED
-  VERIFIED
-  REJECTED
 }
 
 enum ApprovalStage {
@@ -117,68 +53,136 @@ enum ApprovalStage {
   BUSINESS_OWNER
 }
 
-enum ApprovalStatus {
-  PENDING
-  IN_PROGRESS
-  APPROVED
-  REJECTED
-  ESCALATED
-}
-
 enum SlaRisk {
   ON_TRACK
   AT_RISK
   OVERDUE
 }
 
-enum ContractStatus {
+enum RequirementStage {
   DRAFT
-  BUYER_REVIEW
-  VENDOR_REVIEW
-  AWAITING_BUYER_SIGNATURE
-  AWAITING_VENDOR_SIGNATURE
-  SIGNED
-  VOIDED
-}
-
-enum ErpPushStatus {
-  PENDING
-  IN_PROGRESS
-  SUCCESS
-  FAILED
-}
-
-enum ActivityAction {
-  REQUEST_CREATED
-  REQUEST_UPDATED
   CANDIDATES_SELECTED
-  INVITES_DISPATCHED
-  INVITE_OPENED
-  VENDOR_REGISTERED
+  INVITES_SENT
+  IN_PROGRESS
+  CLOSED
+}
+
+enum LinkState {
+  INVITED
+  PREQUAL_IN_PROGRESS
   PREQUAL_SUBMITTED
-  VERIFICATION_STARTED
-  VERIFICATION_COMPLETED
-  PREQUAL_APPROVED
-  PREQUAL_REJECTED
-  VENDOR_AWARDED
-  WARM_POOL_ADDED
-  FULL_PACK_SUBMITTED
-  DOCUMENT_UPLOADED
-  DOCUMENT_VERIFIED
-  DEEP_VERIFICATION_STARTED
-  DEEP_VERIFICATION_COMPLETED
-  APPROVAL_SUBMITTED
-  APPROVAL_APPROVED
-  APPROVAL_REJECTED
-  APPROVAL_ESCALATED
-  CONTRACT_UPLOADED
-  CONTRACT_COMMENT_ADDED
-  CONTRACT_SIGNED
-  ERP_PUSH_INITIATED
-  ERP_PUSH_COMPLETED
-  REMINDER_SENT
-  ISSUE_FLAGGED
-  VENDOR_ACTIVATED
+  PREQUAL_UNDER_REVIEW
+  PREQUAL_CLEARED
+  AWARDED
+  FULL_IN_PROGRESS
+  FULL_SUBMITTED
+  FULL_UNDER_REVIEW
+  CONTRACTS_IN_PROGRESS
+  APPROVED
+  ERP_SYNCING
+  ONBOARDED
+  REJECTED
+  ON_HOLD
+  WITHDRAWN
+  ERP_FAILED
+  EXPIRED
+}
+
+enum LinkStage {
+  PREQUAL
+  FULL
+}
+
+enum ActorSide {
+  VENDOR
+  BUYER
+  SYSTEM
+}
+
+enum PartySide {
+  VENDOR
+  BUYER
+}
+
+enum SubmissionStatus {
+  IN_PROGRESS
+  SUBMITTED
+}
+
+enum ContractType {
+  NDA
+  MSA
+  QUALITY_AGREEMENT
+  SUPPLY_AGREEMENT
+  PRICING_AGREEMENT
+  DATA_PROCESSING
+}
+
+enum ContractState {
+  DRAFT_PENDING
+  DRAFT_UPLOADED
+  VENDOR_REVIEW
+  CHANGES_REQUESTED
+  REVISED
+  AGREED
+  AWAITING_SIGNATURES
+  PARTIALLY_EXECUTED
+  EXECUTED
+}
+
+enum ContractVersionKind {
+  DRAFT
+  REVISED
+  VENDOR_SIGNED
+  BUYER_SIGNED
+}
+
+enum ReviewTaskStatus {
+  PENDING
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum ApprovalDecisionType {
+  APPROVED
+  CHANGES_REQUESTED
+}
+
+enum BuyerRole {
+  OWNER
+  QUALITY
+  FINANCE
+  TAX
+  LEGAL
+}
+
+enum VerificationStatus {
+  RUNNING
+  PASSED
+  FAILED
+  NEEDS_REVIEW
+  ACCEPTED
+  REJECTED
+}
+
+enum VerificationCheckType {
+  PAN
+  GST
+  UDYAM
+  PENNY_DROP
+  GST_FILINGS
+}
+
+enum DocumentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+enum BadgeState {
+  VERIFIED
+  LISTED
+  STALE
 }
 
 model User {
@@ -189,16 +193,23 @@ model User {
   image         String?
   role          UserRole  @default(BUYER)
   tier          UserTier  @default(EXECUTIVE)
+  buyerOrgId    String?
+  vendorOrgId   String?
+  buyerRole     BuyerRole?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
   accounts      Account[]
 
   createdRequests     VendorRequest[]    @relation("RequestCreator")
-  approvalAssignments Approval[]         @relation("Approver")
-  activityLogs        ActivityLog[]
-  contractComments    ContractComment[]
-  vendorProfile       Vendor?            @relation("VendorUser")
+  buyerOrg            BuyerOrg?          @relation("BuyerUsers", fields: [buyerOrgId], references: [id])
+  vendorOrg           VendorOrg?         @relation("VendorUsers", fields: [vendorOrgId], references: [id])
+  reviewTasks         ReviewTask[]       @relation("ReviewTaskAssignee")
+  approvalDecisions   ApprovalDecision[] @relation("DecisionMaker")
+  vendorLinks         VendorBuyerLink[]  @relation("LinkUsers")
+
+  @@index([buyerOrgId])
+  @@index([vendorOrgId])
 }
 
 model Session {
@@ -245,76 +256,86 @@ model Verification {
   @@index([identifier])
 }
 
-model Vendor {
-  id              String       @id @default(cuid())
-  name            String
-  contactEmail    String       @unique
-  vendorType      VendorType?
-  panNumber       String?
-  gstin           String?
-  udyamNumber     String?
-  vendorCode      String?      @unique
-  isVerified      Boolean      @default(false)
-  isInWarmPool    Boolean      @default(false)
-  isInDirectory   Boolean      @default(false)
-  prequalScore    Int?
-  category        String?
-  certifications  String[]
+model BuyerOrg {
+  id        String   @id @default(cuid())
+  name      String
+  gstId     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users              User[]             @relation("BuyerUsers")
+  vendorRequests     VendorRequest[]    @relation("BuyerOrgRequests")
+  candidates         RequestCandidate[] @relation("CandidateBuyerOrg")
+  vendorInvitations  VendorInvitation[]
+  vendorLinks        VendorBuyerLink[]  @relation("BuyerOrgLinks")
+
+  @@index([gstId])
+}
+
+model VendorOrg {
+  id        String   @id @default(cuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users       User[]             @relation("VendorUsers")
+  vendorLinks VendorBuyerLink[]  @relation("VendorOrgLinks")
+}
+
+model DirectoryVendor {
+  id              String   @id @default(cuid())
+  legalName       String
+  contactEmail    String   @unique
+  pan             String?
+  primaryGstin    String?
   city            String?
   state           String?
-  processTags     String[]     @default([])
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  processTags     String[] @default([])
+  certificationTags String[] @default([])
+  badgeState      BadgeState @default(LISTED)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
-  userId          String?      @unique
-  user            User?        @relation("VendorUser", fields: [userId], references: [id])
-
-  candidates          RequestCandidate[]
-  invitations         VendorInvitation[]
-  verificationChecks  VerificationCheck[]
-  documents           Document[]
-  approvals           Approval[]
-  contracts           Contract[]
-  erpPushRecords      ErpPushRecord[]
-  activityLogs        ActivityLog[]
+  candidates        RequestCandidate[]
 
   @@index([contactEmail])
-  @@index([vendorCode])
+  @@index([primaryGstin])
 }
 
 model VendorRequest {
-  id                    String          @id @default(cuid())
-  requestNumber         String          @unique
-  status                RequestStatus   @default(DRAFT)
+  id                    String            @id @default(cuid())
+  requestNumber         String            @unique
+  stage                 RequirementStage  @default(DRAFT)
   title                 String?
   category              String
   process               RequestProcess
   vendorType            VendorType
   businessJustification String?
   notes                 String?
-  processCategories     String[]        @default([])
+  processCategories     String[]          @default([])
   plantLocation         String?
   targetAwardDate       DateTime?
-  createdAt             DateTime        @default(now())
-  updatedAt             DateTime        @updatedAt
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
 
   createdById           String
-  createdBy             User            @relation("RequestCreator", fields: [createdById], references: [id])
+  createdBy             User              @relation("RequestCreator", fields: [createdById], references: [id])
+  buyerOrgId            String
+  buyerOrg              BuyerOrg          @relation("BuyerOrgRequests", fields: [buyerOrgId], references: [id])
 
   candidates            RequestCandidate[]
   invitations           VendorInvitation[]
-  activityLogs          ActivityLog[]
-  approvals             Approval[]
+  links                 VendorBuyerLink[]
   scoringCriteria       ScoringCriterion[]
 
   @@index([createdById])
-  @@index([status])
+  @@index([stage])
   @@index([requestNumber])
+  @@index([buyerOrgId])
 }
 
 model RequestCandidate {
   id              String           @id @default(cuid())
-  status          CandidateStatus  @default(SELECTED)
   source          CandidateSource  @default(DIRECTORY)
   legalName       String?
   contactEmail    String?
@@ -323,22 +344,21 @@ model RequestCandidate {
   gstin           String?
   city            String?
   state           String?
-  inviteStatus    InviteStatus     @default(PENDING)
-  score            Int?
-  scoreBreakdown   Json?
-  commercials      Json?
-  isAwarded        Boolean  @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
   requestId       String
   request         VendorRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
   vendorId        String
-  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  vendor          DirectoryVendor  @relation(fields: [vendorId], references: [id])
+  buyerOrgId      String
+  buyerOrg        BuyerOrg         @relation("CandidateBuyerOrg", fields: [buyerOrgId], references: [id])
+  link            VendorBuyerLink?
 
   @@unique([requestId, vendorId])
   @@index([requestId])
   @@index([vendorId])
+  @@index([buyerOrgId])
 }
 
 model VendorInvitation {
@@ -347,7 +367,6 @@ model VendorInvitation {
   tokenHash       String?       @unique
   magicTokenPlain String?
   email           String?
-  channel         InviteChannel @default(EMAIL)
   status          InviteStatus  @default(PENDING)
   expiresAt       DateTime
   remindersSent   Int           @default(0)
@@ -357,55 +376,161 @@ model VendorInvitation {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
 
-  vendorId        String
-  vendor          Vendor        @relation(fields: [vendorId], references: [id])
   requestId       String
   request         VendorRequest @relation(fields: [requestId], references: [id])
+  buyerOrgId      String
+  buyerOrg        BuyerOrg      @relation(fields: [buyerOrgId], references: [id])
 
   @@index([token])
   @@index([tokenHash])
-  @@index([vendorId])
   @@index([requestId])
+  @@index([buyerOrgId])
+}
+
+model VendorBuyerLink {
+  id                String      @id @default(cuid())
+  candidateId       String      @unique
+  requestId         String
+  buyerOrgId        String
+  vendorUserId      String?
+  vendorOrgId       String?
+  state             LinkState   @default(INVITED)
+  stage             LinkStage?
+  prequalScore      Int?
+  awardedAt         DateTime?
+  onboardedAt       DateTime?
+  erpVendorCode     String?
+  currentStateSince DateTime    @default(now())
+  createdAt         DateTime    @default(now())
+
+  candidate          RequestCandidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  requirement        VendorRequest    @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  buyerOrg           BuyerOrg         @relation("BuyerOrgLinks", fields: [buyerOrgId], references: [id])
+  vendorUser         User?            @relation("LinkUsers", fields: [vendorUserId], references: [id], onDelete: SetNull)
+  vendorOrg          VendorOrg?       @relation("VendorOrgLinks", fields: [vendorOrgId], references: [id])
+
+  events             LinkEvent[]
+  submissions        Submission[]
+  fieldValues        FieldValue[]
+  documents          Document[]
+  verificationChecks VerificationCheck[]
+  reviewTasks        ReviewTask[]
+  approvalDecisions  ApprovalDecision[]
+  contracts          Contract[]
+  contractVersions   ContractVersion[]
+  contractComments   ContractComment[]
+
+  @@index([requestId])
+  @@index([buyerOrgId])
+  @@index([vendorUserId])
+}
+
+model LinkEvent {
+  id          String      @id @default(cuid())
+  linkId      String
+  fromState   LinkState?
+  toState     LinkState
+  actorType   ActorSide
+  actorId     String?
+  side        ActorSide
+  note        String?
+  occurredAt  DateTime    @default(now())
+
+  link        VendorBuyerLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@index([linkId])
+}
+
+model Submission {
+  id                String            @id @default(cuid())
+  linkId            String
+  stage             LinkStage
+  status            SubmissionStatus  @default(IN_PROGRESS)
+  submittedAt       DateTime?
+  resolvedChecklist Json?
+  createdAt         DateTime          @default(now())
+
+  link              VendorBuyerLink   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  fieldValues       FieldValue[]
+  documents         Document[]
+
+  @@unique([linkId, stage])
+  @@index([linkId])
+}
+
+model FieldValue {
+  id            String      @id @default(cuid())
+  submissionId  String
+  linkId        String
+  fieldKey      String
+  value         String?
+  source        String?
+  updatedAt     DateTime    @updatedAt
+
+  submission    Submission      @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  link          VendorBuyerLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+
+  @@unique([submissionId, fieldKey])
+  @@index([linkId])
+  @@index([submissionId])
+}
+
+model FileBlob {
+  id        String    @id @default(cuid())
+  data      String
+  sha256    String?
+  createdAt DateTime  @default(now())
+
+  documents          Document[]
+  contractVersions   ContractVersion[]
+  contractComments   ContractComment[]
 }
 
 model VerificationCheck {
-  id              String                   @id @default(cuid())
-  type            VerificationCheckType
-  status          VerificationCheckStatus  @default(PENDING)
-  matchScore      Int?
-  rawResponse     String?
-  notes           String?
-  verifiedAt      DateTime?
-  verifiedById    String?
-  createdAt       DateTime                 @default(now())
-  updatedAt       DateTime                 @updatedAt
+  id            String             @id @default(cuid())
+  checkType     VerificationCheckType
+  subjectValue  String
+  status        VerificationStatus @default(RUNNING)
+  matchScore    Int?
+  detail        String?
+  ranAt         DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
 
-  vendorId        String
-  vendor          Vendor                   @relation(fields: [vendorId], references: [id])
+  linkId        String
+  link          VendorBuyerLink    @relation(fields: [linkId], references: [id], onDelete: Cascade)
 
-  @@unique([vendorId, type])
-  @@index([vendorId])
+  @@unique([linkId, checkType])
+  @@index([linkId])
 }
 
 model Document {
   id              String           @id @default(cuid())
-  name            String
-  category        DocumentCategory
+  checklistItemKey String?
+  fileName        String
   mimeType        String
   sizeBytes       Int
-  data            String
   status          DocumentStatus   @default(PENDING)
+  version         Int              @default(1)
   uploadedAt      DateTime         @default(now())
-  verifiedAt      DateTime?
-  rejectionReason String?
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
-  vendorId        String
-  vendor          Vendor           @relation(fields: [vendorId], references: [id])
+  rejectionReason String?
+  submissionId    String?
+  submission      Submission?      @relation(fields: [submissionId], references: [id], onDelete: SetNull)
+  linkId          String
+  link            VendorBuyerLink  @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  fileBlobId      String
+  fileBlob        FileBlob         @relation(fields: [fileBlobId], references: [id])
+  supersedesDocumentId String?  @unique
+  supersedesDocument Document?    @relation("DocumentSupersession", fields: [supersedesDocumentId], references: [id])
+  supersededBy    Document?        @relation("DocumentSupersession")
 
-  @@index([vendorId])
-  @@index([category])
+  @@index([linkId])
+  @@index([fileBlobId])
+  @@index([checklistItemKey])
 }
 
 model SlaRule {
@@ -417,98 +542,102 @@ model SlaRule {
   updatedAt             DateTime      @updatedAt
 }
 
-model Approval {
-  id              String         @id @default(cuid())
-  stage           ApprovalStage
-  status          ApprovalStatus @default(PENDING)
-  slaRisk         SlaRisk        @default(ON_TRACK)
-  enteredStageAt  DateTime       @default(now())
-  completedAt     DateTime?
-  notes           String?
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+model Contract {
+  id                String           @id @default(cuid())
+  contractType      ContractType
+  state             ContractState    @default(DRAFT_PENDING)
+  currentVersionId  String?          @unique
+  linkId            String
+  dispatchedAt      DateTime?
+  executedAt        DateTime?
+  createdAt         DateTime         @default(now())
 
-  vendorId        String
-  vendor          Vendor         @relation(fields: [vendorId], references: [id])
-  assignedToId    String?
-  assignedTo      User?          @relation("Approver", fields: [assignedToId], references: [id])
-  requestId       String?
-  request         VendorRequest? @relation(fields: [requestId], references: [id])
+  currentVersion    ContractVersion? @relation("CurrentVersion", fields: [currentVersionId], references: [id])
+  link              VendorBuyerLink  @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  versions          ContractVersion[] @relation("ContractVersions")
+  comments          ContractComment[]
 
-  @@unique([vendorId, stage, requestId])
-  @@index([vendorId])
-  @@index([assignedToId])
-  @@index([status])
+  @@unique([linkId, contractType])
+  @@index([linkId])
 }
 
-model Contract {
-  id              String          @id @default(cuid())
-  title           String
-  status          ContractStatus  @default(DRAFT)
-  documentData    String?
-  documentName    String?
-  mimeType        String?
-  sizeBytes       Int?
-  buyerSignedAt   DateTime?
-  vendorSignedAt  DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+model ContractVersion {
+  id                  String              @id @default(cuid())
+  contractId          String
+  linkId              String
+  versionNo           Int
+  fileBlobId          String
+  fileName            String
+  uploadedBySide      PartySide
+  kind                ContractVersionKind
+  supersedesVersionId String?             @unique
+  createdAt           DateTime            @default(now())
 
-  vendorId        String
-  vendor          Vendor          @relation(fields: [vendorId], references: [id])
-  comments        ContractComment[]
+  contract            Contract            @relation("ContractVersions", fields: [contractId], references: [id], onDelete: Cascade)
+  currentOf           Contract?           @relation("CurrentVersion")
+  link                VendorBuyerLink     @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  fileBlob            FileBlob            @relation(fields: [fileBlobId], references: [id])
+  supersedes          ContractVersion?    @relation("VersionSupersede", fields: [supersedesVersionId], references: [id])
+  supersededBy        ContractVersion[]   @relation("VersionSupersede")
+  comments            ContractComment[]
 
-  @@index([vendorId])
+  @@unique([contractId, versionNo])
+  @@index([contractId])
+  @@index([linkId])
 }
 
 model ContractComment {
-  id              String   @id @default(cuid())
-  content         String
-  createdAt       DateTime @default(now())
+  id                String          @id @default(cuid())
+  body              String
+  authorSide        PartySide
+  contractVersionId String
+  linkId            String
+  fileBlobId        String?
+  fileName          String?
+  createdAt         DateTime        @default(now())
 
-  contractId      String
-  contract        Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  authorId        String
-  author          User     @relation(fields: [authorId], references: [id])
+  contractVersion   ContractVersion @relation(fields: [contractVersionId], references: [id], onDelete: Cascade)
+  link              VendorBuyerLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  contract          Contract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  contractId        String
+  fileBlob          FileBlob?       @relation(fields: [fileBlobId], references: [id])
 
-  @@index([contractId])
+  @@index([linkId])
+  @@index([contractVersionId])
 }
 
-model ErpPushRecord {
-  id              String        @id @default(cuid())
-  status          ErpPushStatus @default(PENDING)
-  vendorCode      String?
-  apiMethod       String?
-  responsePayload String?
-  errorMessage    String?
-  pushedAt        DateTime?
-  totalDays       Int?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
+model ReviewTask {
+  id              String            @id @default(cuid())
+  linkId          String
+  stage           ApprovalStage
+  assignedUserId  String?
+  status          ReviewTaskStatus  @default(PENDING)
+  slaHours        Int?
+  createdAt       DateTime          @default(now())
 
-  vendorId        String
-  vendor          Vendor        @relation(fields: [vendorId], references: [id])
+  link            VendorBuyerLink   @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  assignedUser    User?             @relation("ReviewTaskAssignee", fields: [assignedUserId], references: [id], onDelete: SetNull)
+  decisions       ApprovalDecision[]
 
-  @@index([vendorId])
+  @@unique([linkId, stage])
+  @@index([linkId])
 }
 
-model ActivityLog {
-  id              String         @id @default(cuid())
-  action          ActivityAction
-  message         String
-  metadata        String?
-  createdAt       DateTime       @default(now())
+model ApprovalDecision {
+  id            String               @id @default(cuid())
+  reviewTaskId  String
+  linkId        String
+  decision      ApprovalDecisionType
+  comment       String?
+  decidedById   String?
+  decidedAt     DateTime             @default(now())
 
-  requestId       String?
-  request         VendorRequest? @relation(fields: [requestId], references: [id])
-  vendorId        String?
-  vendor          Vendor?        @relation(fields: [vendorId], references: [id])
-  userId          String?
-  user            User?          @relation(fields: [userId], references: [id])
+  reviewTask    ReviewTask           @relation(fields: [reviewTaskId], references: [id], onDelete: Cascade)
+  link          VendorBuyerLink      @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  decidedBy     User?                @relation("DecisionMaker", fields: [decidedById], references: [id], onDelete: SetNull)
 
-  @@index([requestId])
-  @@index([vendorId])
-  @@index([createdAt])
+  @@index([linkId])
+  @@index([reviewTaskId])
 }
 
 model ScoringCriterion {

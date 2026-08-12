@@ -1,26 +1,25 @@
 import { z } from "zod";
-import { documentCategorySchema, documentStatusSchema } from "./enums.js";
+import { documentStatusSchema } from "./enums.js";
 
 export const uploadDocumentSchema = z.object({
-  name: z.string().min(1),
-  category: documentCategorySchema,
+  checklistItemKey: z.string().min(1),
+  fileBlobId: z.string().min(1),
+  fileName: z.string().min(1),
   mimeType: z.string().min(1),
-  sizeBytes: z.number().int().positive().max(1_048_576),
-  data: z.string().min(1),
+  sizeBytes: z.number().int().positive(),
 });
 export type UploadDocumentInput = z.infer<typeof uploadDocumentSchema>;
 
 export const documentResponseSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  category: documentCategorySchema,
+  checklistItemKey: z.string(),
+  fileName: z.string(),
   mimeType: z.string(),
   sizeBytes: z.number(),
+  fileBlobId: z.string(),
   status: documentStatusSchema,
-  uploadedAt: z.string().datetime(),
-  verifiedAt: z.string().datetime().nullable(),
   rejectionReason: z.string().nullable(),
-  vendorId: z.string(),
-  createdAt: z.string().datetime(),
+  uploadedAt: z.string(),
+  linkId: z.string(),
 });
 export type DocumentResponse = z.infer<typeof documentResponseSchema>;

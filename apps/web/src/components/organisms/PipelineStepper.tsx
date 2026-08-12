@@ -1,34 +1,29 @@
-import { ProgressDot } from '../atoms/ProgressDot.js';
-import { PIPELINE_STEPS, getCurrentStepIndex, getStepState } from '../../lib/pipeline.js';
-import { cn } from '../ui.js';
-import type { RequestStatus } from '@vendor-management/shared';
+import { LINK_PROGRESS_RAIL, LINK_STATE_META } from "@vendor-management/shared";
+import { getLinkStepIndex, getLinkStepState } from "../../lib/pipeline.js";
+import { ProgressDot } from "../atoms/ProgressDot.js";
 
 interface PipelineStepperProps {
-  readonly status: RequestStatus;
-  readonly className?: string;
+  currentState: string;
 }
 
-export function PipelineStepper({ status, className }: PipelineStepperProps): React.ReactElement {
-  const currentIndex = getCurrentStepIndex(status);
+export function PipelineStepper({ currentState }: PipelineStepperProps): React.ReactElement {
+  const currentIndex = getLinkStepIndex(currentState);
 
   return (
-    <div className={cn('flex items-start', className)}>
-      {PIPELINE_STEPS.map((step, i) => {
-        const state = getStepState(i, currentIndex);
-        const isLast = i === PIPELINE_STEPS.length - 1;
+    <div className="flex items-center gap-1">
+      {LINK_PROGRESS_RAIL.map((state, i) => {
+        const stepState = getLinkStepState(i, currentIndex);
+        const meta = LINK_STATE_META[state];
         return (
-          <div key={step.key} className="flex items-start flex-1">
+          <div key={state} className="flex items-center gap-1">
             <div className="flex flex-col items-center">
-              <ProgressDot state={state} size="md" />
-              <p className={cn(
-                'mt-2 text-xs text-center leading-tight max-w-[80px]',
-                state === 'active' ? 'font-semibold text-slate-900' : state === 'done' ? 'text-emerald-700' : 'text-slate-400',
-              )}>
-                {step.label}
-              </p>
+              <ProgressDot state={stepState} />
+              <span className="mt-1 text-[10px] text-slate-400 leading-tight text-center max-w-[60px]">
+                {meta?.label ?? state}
+              </span>
             </div>
-            {!isLast && (
-              <div className={cn('mt-3 h-0.5 flex-1 mx-1', state === 'done' ? 'bg-emerald-500' : 'bg-slate-200')} />
+            {i < LINK_PROGRESS_RAIL.length - 1 && (
+              <div className={`h-px w-4 ${stepState === "done" ? "bg-emerald-400" : "bg-slate-200"}`} />
             )}
           </div>
         );

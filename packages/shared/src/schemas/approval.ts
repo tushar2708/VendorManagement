@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { approvalStageSchema, approvalStatusSchema, slaRiskSchema } from "./enums.js";
+import { approvalStageSchema, reviewTaskStatusSchema, slaRiskSchema } from "./enums.js";
 
 export const updateApprovalSchema = z.object({
   status: z.enum(["APPROVED", "REJECTED"]),
@@ -10,13 +10,15 @@ export type UpdateApprovalInput = z.infer<typeof updateApprovalSchema>;
 export const approvalResponseSchema = z.object({
   id: z.string(),
   stage: approvalStageSchema,
-  status: approvalStatusSchema,
+  status: reviewTaskStatusSchema,
   slaRisk: slaRiskSchema,
-  enteredStageAt: z.string().datetime(),
-  completedAt: z.string().datetime().nullable(),
-  notes: z.string().nullable(),
-  vendorId: z.string(),
-  assignedToId: z.string().nullable(),
-  createdAt: z.string().datetime(),
+  ageDays: z.number(),
+  slaDays: z.number(),
+  vendorName: z.string().nullable(),
+  vendorEmail: z.string().nullable(),
+  assignedToName: z.string().nullable(),
+  requestId: z.string().nullable(),
+  linkId: z.string(),
+  createdAt: z.string(),
 });
 export type ApprovalResponse = z.infer<typeof approvalResponseSchema>;

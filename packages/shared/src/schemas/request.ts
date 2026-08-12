@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { requestProcessSchema, requestStatusSchema, vendorTypeSchema } from "./enums.js";
+import { requestProcessSchema, requirementStageSchema, vendorTypeSchema } from "./enums.js";
 
 export const createRequestSchema = z.object({
   category: z.string().min(1),
@@ -15,14 +15,14 @@ export const updateRequestSchema = z.object({
   process: requestProcessSchema.optional(),
   vendorType: vendorTypeSchema.optional(),
   notes: z.string().optional(),
-  status: requestStatusSchema.optional(),
+  stage: requirementStageSchema.optional(),
 });
 export type UpdateRequestInput = z.infer<typeof updateRequestSchema>;
 
 export const requestResponseSchema = z.object({
   id: z.string(),
   requestNumber: z.string(),
-  status: requestStatusSchema,
+  stage: requirementStageSchema,
   category: z.string(),
   process: requestProcessSchema,
   vendorType: vendorTypeSchema,

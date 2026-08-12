@@ -11,6 +11,8 @@ import { VendorDetailPage } from './routes/buyer/vendor-detail.js';
 import { ApproverQueuePage } from './routes/buyer/approvals.js';
 import { SlaSettingsPage } from './routes/buyer/sla-settings.js';
 import { ScoreAwardPage } from './routes/buyer/score-award.js';
+import { ActivityPage } from "./routes/buyer/activity.js";
+import { TeamPage } from "./routes/buyer/team.js";
 import { VendorDashboard } from './routes/vendor/dashboard.js';
 import { PrequalPage } from './routes/vendor/prequal.js';
 import { VendorCompletePage } from './routes/vendor/complete.js';
@@ -46,6 +48,8 @@ export const router = createBrowserRouter([
       { path: '/approvals', element: <ApproverQueuePage /> },
       { path: '/sla-settings', element: <SlaSettingsPage /> },
       { path: '/requests/:id/award', element: <ScoreAwardPage /> },
+      { path: "activity", element: <ActivityPage /> },
+      { path: "team", element: <TeamPage /> },
     ],
   },
   {

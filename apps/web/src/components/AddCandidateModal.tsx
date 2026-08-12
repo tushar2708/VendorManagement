@@ -120,7 +120,7 @@ function DirectoryTab({
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const items: AddCandidateInput[] = [...selected].map((id) => ({ source: 'directory', directoryVendorId: id }));
+      const items: AddCandidateInput[] = [...selected].map((id) => ({ source: 'directory', vendorId: id }));
       const detail = await addCandidates(requirementId, items);
       onUpdated(detail);
       onClose();

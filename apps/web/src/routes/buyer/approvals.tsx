@@ -5,6 +5,7 @@ import { Card, Spinner, Button } from '../../components/ui.js';
 import { Badge } from '../../components/atoms/Badge.js';
 import { Toast } from '../../components/atoms/Toast.js';
 import { EmptyState } from '../../components/molecules/EmptyState.js';
+import { VendorDrawer } from '../../components/organisms/VendorDrawer.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
 import { useToast } from '../../hooks/use-toast.js';
 import { useAuth } from '../../hooks/use-auth.js';
@@ -27,6 +28,7 @@ const RISK_VARIANT: Record<string, 'success' | 'warning' | 'danger'> = {
 
 export function ApproverQueuePage(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
+  const [drawerLinkId, setDrawerLinkId] = useState<string | null>(null);
   const headingRef = useTextReveal<HTMLHeadingElement>();
   const { toast, showToast, hideToast } = useToast();
   const { user } = useAuth();
@@ -74,6 +76,7 @@ export function ApproverQueuePage(): React.ReactElement {
                 <th className="px-4 py-3 font-medium">Age</th>
                 <th className="px-4 py-3 font-medium">SLA target</th>
                 <th className="px-4 py-3 font-medium">Risk</th>
+                <th className="px-4 py-3 font-medium">Engagement</th>
                 <th className="px-4 py-3" />
               </tr>
             </thead>
@@ -87,6 +90,9 @@ export function ApproverQueuePage(): React.ReactElement {
                   <td className="px-4 py-3">
                     <Badge variant={RISK_VARIANT[a.slaRisk] ?? 'neutral'}>{a.slaRisk.replace('_', ' ')}</Badge>
                   </td>
+                  <td className="px-4 py-3">
+                    <Button size="sm" variant="secondary" onClick={() => setDrawerLinkId(a.linkId)}>View</Button>
+                  </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center gap-2 justify-end">
                       <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'REJECTED')}>Reject</Button>
@@ -99,6 +105,7 @@ export function ApproverQueuePage(): React.ReactElement {
           </table>
         </Card>
       )}
+      {drawerLinkId && <VendorDrawer linkId={drawerLinkId} onClose={() => setDrawerLinkId(null)} />}
       {toast && <Toast message={toast.message} variant={toast.variant} onClose={hideToast} />}
     </div>
   );

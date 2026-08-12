@@ -1,32 +1,31 @@
 import { z } from 'zod';
-import { requestStatusSchema } from './enums.js';
+import { requirementStageSchema, requestProcessSchema, vendorTypeSchema } from './enums.js';
 
-export const pipelineStepSchema = z.enum([
-  'INTAKE_AND_INVITE',
-  'VERIFICATION',
-  'AWARD_AND_FULL_PACK',
-  'GOVERNANCE',
-  'CONTRACT',
-  'ACTIVATED',
-]);
-export type PipelineStep = z.infer<typeof pipelineStepSchema>;
-
-// Summary shown on the dashboard (dates serialised as ISO strings).
 export const requirementSummarySchema = z.object({
   id: z.string(),
-  title: z.string(),
+  title: z.string().nullable(),
   partCategory: z.string().nullable(),
   processCategories: z.array(z.string()),
   plantLocation: z.string().nullable(),
   targetAwardDate: z.string().nullable(),
-  status: requestStatusSchema,
-  pipelineStep: pipelineStepSchema,
-  whoseCourt: z.enum(['Buyer', 'Vendor', 'Done']),
-  openDays: z.number().int().nonnegative(),
-  candidateCount: z.number().int().nonnegative(),
+  stage: requirementStageSchema,
+  candidateCount: z.number(),
   createdAt: z.string(),
 });
 export type RequirementSummary = z.infer<typeof requirementSummarySchema>;
+
+export const inviteRequirementSchema = z.object({
+  id: z.string(),
+  title: z.string().nullable(),
+  partCategory: z.string().nullable(),
+  processCategories: z.array(z.string()),
+  plantLocation: z.string().nullable(),
+  targetAwardDate: z.string().nullable(),
+  stage: requirementStageSchema,
+  createdAt: z.string(),
+  candidates: z.array(z.any()),
+});
+export type InviteRequirement = z.infer<typeof inviteRequirementSchema>;
 
 export const requirementListResponseSchema = z.object({
   requirements: z.array(requirementSummarySchema),
@@ -34,13 +33,13 @@ export const requirementListResponseSchema = z.object({
 export type RequirementListResponse = z.infer<typeof requirementListResponseSchema>;
 
 export const createRequirementSchema = z.object({
-  title: z.string().trim().min(1, 'Title is required'),
-  partCategory: z.string().trim().max(80).optional(),
-  process: z.enum(['RFQ', 'NOMINATION', 'DIRECT']).default('RFQ'),
-  vendorType: z.enum(['PRODUCTION_PART', 'INDIRECT_SERVICES']).default('PRODUCTION_PART'),
+  title: z.string().min(1).max(200),
+  partCategory: z.string().optional(),
+  process: requestProcessSchema.default('RFQ'),
+  vendorType: vendorTypeSchema.default('PRODUCTION_PART'),
   processCategories: z.array(z.string()).default([]),
-  plantLocation: z.string().trim().max(120).optional(),
-  targetAwardDate: z.string().date().optional(),
+  plantLocation: z.string().optional(),
+  targetAwardDate: z.string().optional(),
 });
 export type CreateRequirementInput = z.infer<typeof createRequirementSchema>;
 
@@ -59,34 +58,7 @@ export type InviteResult = z.infer<typeof inviteResultSchema>;
 
 export const inviteResponseSchema = z.object({
   results: z.array(inviteResultSchema),
-  requirement: z.object({
-    id: z.string(),
-    title: z.string(),
-    partCategory: z.string().nullable(),
-    processCategories: z.array(z.string()),
-    plantLocation: z.string().nullable(),
-    targetAwardDate: z.string().nullable(),
-    status: requestStatusSchema,
-    pipelineStep: pipelineStepSchema,
-    whoseCourt: z.enum(['Buyer', 'Vendor', 'Done']),
-    openDays: z.number().int().nonnegative(),
-    createdAt: z.string(),
-    candidates: z.array(z.object({
-      id: z.string(),
-      requirementId: z.string(),
-      source: z.enum(['MANUAL', 'DIRECTORY']),
-      directoryVendorId: z.string().nullable(),
-      legalName: z.string(),
-      contactEmail: z.string(),
-      contactPhone: z.string().nullable(),
-      pan: z.string().nullable(),
-      gstin: z.string().nullable(),
-      city: z.string().nullable(),
-      state: z.string().nullable(),
-      inviteStatus: z.enum(['PENDING', 'INVITED', 'OPENED', 'REGISTERED', 'EXPIRED']),
-      createdAt: z.string(),
-    })),
-  }),
+  requirement: inviteRequirementSchema,
 });
 export type InviteResponse = z.infer<typeof inviteResponseSchema>;
 
@@ -102,10 +74,12 @@ export type RequirementStats = z.infer<typeof requirementStatsSchema>;
 export const activityListResponseSchema = z.object({
   activities: z.array(z.object({
     id: z.string(),
-    action: z.string(),
-    message: z.string(),
-    metadata: z.string().nullable(),
-    createdAt: z.string(),
+    at: z.string(),
+    side: z.string(),
+    category: z.string(),
+    vendorName: z.string().nullable(),
+    requirementTitle: z.string().nullable(),
+    description: z.string(),
   })),
 });
 export type ActivityListResponse = z.infer<typeof activityListResponseSchema>;

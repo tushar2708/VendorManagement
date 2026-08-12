@@ -14,7 +14,9 @@
             "slaRules": { "read": true, "update": true },
             "scoring": { "read": true, "update": true },
             "contracts": { "read": true, "sign": true },
-            "activity": { "read": true }
+            "activity": { "read": true },
+            "team": { "create": true, "read": true, "update": true, "delete": true },
+            "buyerLinks": { "read": true, "review": true, "award": true, "advance": true, "erp": true }
           }
         },
         "LEADERSHIP": {
@@ -30,7 +32,8 @@
             "scoring": { "read": true, "update": false },
             "contracts": { "read": true, "sign": false },
             "activity": { "read": true },
-            "analytics": { "read": true }
+            "analytics": { "read": true },
+            "buyerLinks": { "read": true, "review": false, "award": false, "advance": false, "erp": false }
           }
         }
       }
@@ -45,7 +48,10 @@
             "prequal": { "read": true, "submit": true },
             "documents": { "read": true, "upload": true },
             "contract": { "read": true, "sign": true },
-            "profile": { "read": true, "update": true }
+            "profile": { "read": true, "update": true },
+            "links": { "read": true, "submit": true },
+            "fields": { "read": true, "save": true },
+            "vendorContracts": { "read": true, "sign": true }
           }
         },
         "LEADERSHIP": {
@@ -57,7 +63,10 @@
             "documents": { "read": true, "upload": false },
             "contract": { "read": true, "sign": false },
             "profile": { "read": true, "update": false },
-            "analytics": { "read": true }
+            "analytics": { "read": true },
+            "links": { "read": true, "submit": false },
+            "fields": { "read": true, "save": false },
+            "vendorContracts": { "read": true, "sign": false }
           }
         }
       }
@@ -77,7 +86,9 @@
             "scoring": { "read": true, "update": true },
             "contracts": { "read": true, "sign": true },
             "activity": { "read": true },
-            "analytics": { "read": true }
+            "analytics": { "read": true },
+            "team": { "create": true, "read": true, "update": true, "delete": true },
+            "buyerLinks": { "read": true, "review": true, "award": true, "advance": true, "erp": true }
           }
         }
       }

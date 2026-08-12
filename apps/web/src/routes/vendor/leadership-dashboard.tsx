@@ -5,7 +5,7 @@ import { Card, Spinner, Button } from '../../components/ui.js';
 import { StatCard } from '../../components/molecules/StatCard.js';
 import { Badge } from '../../components/atoms/Badge.js';
 import { DonutChart } from '../../components/atoms/DonutChart.js';
-import { VendorExecutiveDashboard } from './dashboard.js';
+import VendorExecutiveDashboard from './dashboard.js';
 
 type LoadState =
   | { readonly kind: 'loading' }

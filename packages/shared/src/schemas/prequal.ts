@@ -1,27 +1,21 @@
 import { z } from "zod";
-import { verificationCheckTypeSchema, verificationCheckStatusSchema } from "./enums.js";
+import { verificationCheckTypeSchema, verificationStatusSchema } from "./enums.js";
 
 export const prequalSubmissionSchema = z.object({
-  panNumber: z.string().min(10).max(10),
-  gstin: z.string().min(15).max(15),
+  panNumber: z.string().length(10),
+  gstin: z.string().length(15),
   udyamNumber: z.string().optional(),
 });
 export type PrequalSubmissionInput = z.infer<typeof prequalSubmissionSchema>;
 
 export const verificationCheckResponseSchema = z.object({
   id: z.string(),
-  type: verificationCheckTypeSchema,
-  status: verificationCheckStatusSchema,
+  checkType: verificationCheckTypeSchema,
+  status: verificationStatusSchema,
   matchScore: z.number().nullable(),
-  notes: z.string().nullable(),
-  verifiedAt: z.string().datetime().nullable(),
-  vendorId: z.string(),
-  createdAt: z.string().datetime(),
+  detail: z.any().nullable(),
+  ranAt: z.string().nullable(),
+  expiresAt: z.string().nullable(),
+  createdAt: z.string(),
 });
 export type VerificationCheckResponse = z.infer<typeof verificationCheckResponseSchema>;
-
-export const verificationOverrideSchema = z.object({
-  status: z.enum(["PASS", "FAIL"]),
-  notes: z.string().min(1),
-});
-export type VerificationOverrideInput = z.infer<typeof verificationOverrideSchema>;

@@ -5,17 +5,17 @@ import { prisma } from "@vendor-management/db";
 export const requireAuth: RequestHandler = async (request, response, next) => {
   const session = await auth.api.getSession({ headers: request.headers as unknown as Headers });
   if (!session) {
-    response.status(401).json({ success: false, error: "Authentication required" });
+    response.status(401).json({ success: false, error: 'Authentication required' });
     return;
   }
 
   const user = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { id: true, email: true, name: true, role: true },
+    select: { id: true, email: true, name: true, role: true, vendorOrgId: true },
   });
 
   if (!user) {
-    response.status(401).json({ success: false, error: "User not found" });
+    response.status(401).json({ success: false, error: 'User not found' });
     return;
   }
 
@@ -37,18 +37,17 @@ export function requireRole(...roles: string[]): RequestHandler {
 export const requireVendorOwnership: RequestHandler = async (request, response, next) => {
   const user = response.locals.user;
   if (!user) {
-    response.status(401).json({ success: false, error: "Authentication required" });
+    response.status(401).json({ success: false, error: 'Authentication required' });
     return;
   }
 
-  if (user.role === "BUYER" || user.role === "ADMIN") {
+  if (user.role === 'BUYER' || user.role === 'ADMIN') {
     next();
     return;
   }
 
-  const vendor = await prisma.vendor.findUnique({ where: { userId: user.id } });
-  if (!vendor || vendor.id !== request.params.id) {
-    response.status(403).json({ success: false, error: "Access denied" });
+  if (!user.vendorOrgId || user.vendorOrgId !== String(request.params.id)) {
+    response.status(403).json({ success: false, error: 'Access denied' });
     return;
   }
 

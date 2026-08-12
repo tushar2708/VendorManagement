@@ -3,136 +3,144 @@ import { updateApprovalSchema } from '@vendor-management/shared';
 import { prisma } from '@vendor-management/db';
 import { requireAuth } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';
-import { assertTransition, nextStageAfterGovernance, TransitionError } from '../services/state-machine.js';
+import { advanceLinkIfGateOpen } from '../lib/contract-state.js';
+import { transition } from '../lib/link-state.js';
 
 export const approvalsRouter = Router();
 approvalsRouter.use(requireAuth);
 
-approvalsRouter.get('/', async (req, res, next) => {
-  try {
-    const status = (req.query.status as string) || 'PENDING';
-    const approvals = await prisma.approval.findMany({
-      where: {
-        status: status as any,
-        OR: [
-          { assignedToId: req.user!.userId },
-          { request: { createdById: req.user!.userId } },
-        ],
+approvalsRouter.get('/', async (req, res) => {
+  const statusFilter = (req.query.status as string) || 'PENDING';
+  const tasks = await prisma.reviewTask.findMany({
+    where: {
+      status: statusFilter as any,
+      link: { buyerOrgId: req.user!.buyerOrgId! },
+    },
+    include: {
+      link: {
+        include: {
+          candidate: { select: { legalName: true, contactEmail: true } },
+          requirement: { select: { id: true, title: true } },
+        },
       },
-      include: {
-        vendor: { select: { id: true, name: true, contactEmail: true } },
-        assignedTo: { select: { id: true, name: true } },
-      },
-      orderBy: { enteredStageAt: 'asc' },
-    });
+    },
+    orderBy: { createdAt: 'asc' },
+  });
 
-    const slaRules = await prisma.slaRule.findMany();
-    const slaMap = new Map(slaRules.map((r) => [r.stage, r.slaDays]));
+  const slaRules = await prisma.slaRule.findMany();
+  const slaMap = new Map(slaRules.map((r) => [r.stage, r.slaDays]));
 
-    const now = Date.now();
-    res.json({
-      approvals: approvals.map((a) => {
-        const ageDays = Math.floor((now - a.enteredStageAt.getTime()) / (1000 * 60 * 60 * 24));
-        const slaDays = slaMap.get(a.stage) ?? 0;
-        return {
-          id: a.id,
-          stage: a.stage,
-          status: a.status,
-          slaRisk: a.slaRisk,
-          ageDays,
-          slaDays,
-          enteredStageAt: a.enteredStageAt.toISOString(),
-          completedAt: a.completedAt?.toISOString() ?? null,
-          notes: a.notes,
-          vendorId: a.vendorId,
-          vendorName: a.vendor.name,
-          vendorEmail: a.vendor.contactEmail,
-          assignedToName: a.assignedTo?.name ?? null,
-          requestId: a.requestId ?? null,
-        };
-      }),
-    });
-  } catch (error) {
-    next(error);
-  }
+  const now = Date.now();
+  const items = tasks.map((t) => {
+    const ageDays = Math.floor((now - t.createdAt.getTime()) / 86_400_000);
+    const slaDays = slaMap.get(t.stage) ?? 5;
+    const slaRisk =
+      ageDays > slaDays ? 'OVERDUE' : ageDays > slaDays * 0.7 ? 'AT_RISK' : 'ON_TRACK';
+    return {
+      id: t.id,
+      stage: t.stage,
+      status: t.status,
+      slaRisk,
+      ageDays,
+      slaDays,
+      vendorName: t.link.candidate.legalName,
+      vendorEmail: t.link.candidate.contactEmail,
+      assignedToName: null,
+      requestId: t.link.requirement.id,
+      linkId: t.linkId,
+      createdAt: t.createdAt.toISOString(),
+    };
+  });
+
+  res.json(items);
 });
 
-approvalsRouter.get('/analytics', async (req, res, next) => {
-  try {
-    const approvals = await prisma.approval.findMany({
-      where: {
-        status: 'PENDING',
-        OR: [
-          { assignedToId: req.user!.userId },
-          { request: { createdById: req.user!.userId } },
-        ],
-      },
-      select: { slaRisk: true },
-    });
+approvalsRouter.get('/analytics', async (req, res) => {
+  const tasks = await prisma.reviewTask.findMany({
+    where: { link: { buyerOrgId: req.user!.buyerOrgId! }, status: 'PENDING' },
+    include: { link: true },
+  });
 
-    const distribution: Record<string, number> = { ON_TRACK: 0, AT_RISK: 0, OVERDUE: 0 };
-    for (const a of approvals) {
-      distribution[a.slaRisk] = (distribution[a.slaRisk] ?? 0) + 1;
-    }
+  const slaRules = await prisma.slaRule.findMany();
+  const slaMap = new Map(slaRules.map((r) => [r.stage, r.slaDays]));
+  const now = Date.now();
 
-    const slaComplianceRate = approvals.length > 0
-      ? Math.round((distribution.ON_TRACK / approvals.length) * 100)
-      : 100;
-
-    res.json({ distribution, total: approvals.length, slaComplianceRate });
-  } catch (error) {
-    next(error);
+  let onTrack = 0;
+  let atRisk = 0;
+  let overdue = 0;
+  for (const t of tasks) {
+    const ageDays = Math.floor((now - t.createdAt.getTime()) / 86_400_000);
+    const slaDays = slaMap.get(t.stage) ?? 5;
+    if (ageDays > slaDays) overdue++;
+    else if (ageDays > slaDays * 0.7) atRisk++;
+    else onTrack++;
   }
+
+  const total = onTrack + atRisk + overdue;
+  res.json({
+    distribution: { ON_TRACK: onTrack, AT_RISK: atRisk, OVERDUE: overdue },
+    total,
+    slaComplianceRate: total > 0 ? Math.round((onTrack / total) * 100) : 100,
+  });
 });
 
-approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (req, res, next) => {
-  try {
-    const approval = await prisma.approval.findUnique({ where: { id: req.params.id as string } });
-    if (!approval) {
-      res.status(404).json({ error: 'Approval not found' });
-      return;
-    }
-    const updated = await prisma.approval.update({
-      where: { id: approval.id },
-      data: {
-        status: req.body.status,
-        notes: req.body.notes ?? approval.notes,
-        completedAt: new Date(),
-      },
-    });
+approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (req, res) => {
+  const task = await prisma.reviewTask.findUnique({
+    where: { id: String(req.params.id) },
+    include: { link: { select: { id: true, buyerOrgId: true, vendorUserId: true } } },
+  });
+  if (!task) {
+    res.status(404).json({ error: 'Task not found' });
+    return;
+  }
+  if (task.link.buyerOrgId !== req.user!.buyerOrgId) {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+  if (task.status !== 'PENDING') {
+    res.status(409).json({ error: 'Already decided' });
+    return;
+  }
 
-    if (req.body.status === 'APPROVED' && approval.requestId) {
-      const pendingCount = await prisma.approval.count({
-        where: {
-          vendorId: approval.vendorId,
-          requestId: approval.requestId,
-          status: { not: 'APPROVED' },
-          id: { not: approval.id },
+  const decision = req.body.status;
+
+  if (decision === 'APPROVED') {
+    await prisma.$transaction(async (tx) => {
+      await tx.reviewTask.update({ where: { id: task.id }, data: { status: 'APPROVED' } });
+      await tx.approvalDecision.create({
+        data: {
+          reviewTaskId: task.id,
+          linkId: task.linkId,
+          decision: 'APPROVED',
+          comment: req.body.notes ?? null,
+          decidedById: req.user!.userId,
         },
       });
-      if (pendingCount === 0) {
-        const requirement = await prisma.vendorRequest.findUnique({
-          where: { id: approval.requestId },
-        });
-        if (requirement) {
-          const next = nextStageAfterGovernance(requirement.status);
-          if (next) {
-            assertTransition(requirement.status, next);
-            await prisma.vendorRequest.update({
-              where: { id: requirement.id },
-              data: { status: next },
-            });
-          }
-        }
-      }
-    }
-
-    res.json({ approval: { id: updated.id, stage: updated.stage, status: updated.status } });
-  } catch (error) {
-    if (error instanceof TransitionError) {
-      res.status(409).json({ error: error.message });
-      return;
-    }
-    next(error);
+    });
+    await advanceLinkIfGateOpen(task.linkId);
+  } else {
+    await prisma.$transaction(async (tx) => {
+      await tx.reviewTask.update({ where: { id: task.id }, data: { status: 'CHANGES_REQUESTED' } });
+      await tx.approvalDecision.create({
+        data: {
+          reviewTaskId: task.id,
+          linkId: task.linkId,
+          decision: 'CHANGES_REQUESTED',
+          comment: req.body.notes ?? null,
+          decidedById: req.user!.userId,
+        },
+      });
+      await tx.submission.updateMany({
+        where: { linkId: task.linkId, stage: 'FULL' },
+        data: { status: 'IN_PROGRESS' },
+      });
+    });
+    await transition(task.linkId, 'FULL_IN_PROGRESS', {
+      actorType: 'BUYER',
+      actorId: req.user!.userId,
+      note: 'Changes requested by approver',
+    });
   }
+
+  res.json({ ok: true });
 });

@@ -1,22 +1,38 @@
-import { Card, Button } from '../../components/ui.js';
-import { Icon } from '../../components/atoms/Icon.js';
+import { useEffect, useState } from "react";
+import { listMyLinks, getLink } from "../../lib/links-api.js";
+import type { VendorLinkDTO } from "@vendor-management/shared";
+import { ContractsPanel } from "../../components/organisms/ContractsPanel.js";
+import { Card, Spinner } from "../../components/ui.js";
 
 export function VendorContractPage(): React.ReactElement {
-  return (
-    <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-bold tracking-tight text-slate-900">Contract</h1>
-      <p className="mt-1 text-sm text-slate-500">Review and sign your contract once it is ready.</p>
+  const [link, setLink] = useState<VendorLinkDTO | null>(null);
+  const [loading, setLoading] = useState(true);
 
-      <Card className="mt-6 grid place-items-center gap-3 p-14 text-center">
-        <div className="grid h-12 w-12 place-items-center rounded-full bg-slate-100 text-slate-400">
-          <Icon name="file-text" size={24} />
-        </div>
-        <p className="text-base font-semibold text-slate-900">No contract available yet</p>
-        <p className="max-w-sm text-sm text-slate-500">
-          Your buyer will share the contract for review once your documents have been verified.
-        </p>
-        <Button disabled className="mt-1">Agree &amp; sign</Button>
-      </Card>
+  async function load() {
+    const links = await listMyLinks();
+    if (links.length > 0) {
+      const detail = await getLink(links[0].id);
+      setLink(detail);
+    }
+    setLoading(false);
+  }
+
+  useEffect(() => { load(); }, []);
+
+  if (loading) return <div className="mt-16 grid place-items-center"><Spinner className="h-6 w-6" /></div>;
+  if (!link) return <Card className="mt-8 p-8 text-center"><p className="text-sm text-slate-500">No active engagement found.</p></Card>;
+
+  return (
+    <div>
+      <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contract</h1>
+      {link.contracts && link.contracts.length > 0 && (
+        <ContractsPanel contracts={link.contracts} mode="VENDOR" onRefresh={load} />
+      )}
+      {!link.contracts || link.contracts.length === 0 && (
+        <Card className="mt-6 p-6 text-center">
+          <p className="text-sm text-slate-500">No contract available yet.</p>
+        </Card>
+      )}
     </div>
   );
 }

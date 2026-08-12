@@ -2,8 +2,6 @@ import { Link } from 'react-router-dom';
 import type { RequirementSummary } from '@vendor-management/shared';
 import { Card } from '../ui.js';
 import { Badge } from '../atoms/Badge.js';
-import { Icon } from '../atoms/Icon.js';
-import { MiniPipeline } from './MiniPipeline.js';
 import { formatDate } from '../../lib/format.js';
 import { getStatusLabel, getStatusVariant } from '../../lib/stage.js';
 
@@ -13,8 +11,6 @@ interface RequestCardProps {
 }
 
 export function RequestCard({ requirement: r, index }: RequestCardProps): React.ReactElement {
-  const whoseCourtIcon = r.whoseCourt === 'Vendor' ? 'file-text' : r.whoseCourt === 'Done' ? 'check' : 'users';
-
   return (
     <Link
       to={`/requests/${r.id}`}
@@ -30,18 +26,11 @@ export function RequestCard({ requirement: r, index }: RequestCardProps): React.
                 {r.partCategory ? `${r.partCategory} · ` : ''}opened {formatDate(r.createdAt)}
               </p>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              <span className="flex items-center gap-1 text-xs text-slate-500">
-                <Icon name={whoseCourtIcon} size={14} />
-                {r.whoseCourt}
-              </span>
-              <Badge variant={getStatusVariant(r.status)}>
-                {getStatusLabel(r.status)}
+            <div className="shrink-0">
+              <Badge variant={getStatusVariant(r.stage)}>
+                {getStatusLabel(r.stage)}
               </Badge>
             </div>
-          </div>
-          <div className="mt-4">
-            <MiniPipeline status={r.status} />
           </div>
         </Card>
       </div>

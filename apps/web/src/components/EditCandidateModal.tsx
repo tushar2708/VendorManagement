@@ -54,8 +54,8 @@ export function EditCandidateModal({
   useEffect(() => {
     if (candidate) {
       setForm({
-        legalName: candidate.legalName,
-        contactEmail: candidate.contactEmail,
+        legalName: candidate.legalName ?? '',
+        contactEmail: candidate.contactEmail ?? '',
         contactPhone: candidate.contactPhone || '',
         pan: candidate.pan || '',
         gstin: candidate.gstin || '',

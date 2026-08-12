@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { inviteChannelSchema, inviteStatusSchema } from "./enums.js";
+import { inviteStatusSchema } from "./enums.js";
 
 export const registerViaInviteSchema = z.object({
   name: z.string().min(1),
@@ -9,19 +9,18 @@ export const registerViaInviteSchema = z.object({
 export type RegisterViaInviteInput = z.infer<typeof registerViaInviteSchema>;
 
 export const dispatchInvitesSchema = z.object({
-  channels: z.array(inviteChannelSchema).min(1),
+  candidateIds: z.array(z.string()).optional(),
 });
 export type DispatchInvitesInput = z.infer<typeof dispatchInvitesSchema>;
 
 export const invitationResponseSchema = z.object({
   id: z.string(),
-  token: z.string(),
-  channel: inviteChannelSchema,
+  tokenHash: z.string().nullable(),
+  email: z.string().nullable(),
   status: inviteStatusSchema,
-  expiresAt: z.string().datetime(),
-  remindersSent: z.number(),
-  vendorId: z.string(),
+  expiresAt: z.string(),
+  candidateId: z.string(),
   requestId: z.string(),
-  createdAt: z.string().datetime(),
+  createdAt: z.string(),
 });
 export type InvitationResponse = z.infer<typeof invitationResponseSchema>;

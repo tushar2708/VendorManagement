@@ -1,61 +1,44 @@
 import { z } from 'zod';
-import { requestStatusSchema } from './enums.js';
-import { pipelineStepSchema } from './requirement.js';
-import { inviteStatusSchema } from './enums.js';
+import { candidateSourceSchema, inviteStatusSchema, linkStateSchema, requirementStageSchema } from './enums.js';
 
-export const candidateSourceSchema = z.enum(['MANUAL', 'DIRECTORY']);
-export type CandidateSource = z.infer<typeof candidateSourceSchema>;
-
-// Indian PAN and GSTIN formats — validated only when a value is provided.
 export const PAN_REGEX = /^[A-Z]{5}[0-9]{4}[A-Z]$/;
 export const GSTIN_REGEX = /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]{3}$/;
 
-const panField = z
-  .string()
-  .trim()
-  .transform((v) => v.toUpperCase())
-  .refine((v) => PAN_REGEX.test(v), 'PAN must look like AAAAA9999A')
-  .optional();
-
-const gstinField = z
-  .string()
-  .trim()
-  .transform((v) => v.toUpperCase())
-  .refine((v) => GSTIN_REGEX.test(v), 'Invalid GSTIN format')
-  .optional();
-
 export const candidateSchema = z.object({
   id: z.string(),
-  requirementId: z.string(),
   source: candidateSourceSchema,
-  directoryVendorId: z.string().nullable(),
-  legalName: z.string(),
-  contactEmail: z.string(),
+  legalName: z.string().nullable(),
+  contactEmail: z.string().nullable(),
   contactPhone: z.string().nullable(),
   pan: z.string().nullable(),
   gstin: z.string().nullable(),
   city: z.string().nullable(),
   state: z.string().nullable(),
   inviteStatus: inviteStatusSchema,
+  link: z.object({
+    id: z.string(),
+    state: linkStateSchema,
+    prequalScore: z.number().nullable(),
+  }).nullable().optional(),
   createdAt: z.string(),
 });
 export type Candidate = z.infer<typeof candidateSchema>;
 
-// Adding a candidate — a discriminated union on `source`.
+
 export const addCandidateSchema = z.discriminatedUnion('source', [
   z.object({
     source: z.literal('manual'),
-    legalName: z.string().trim().min(1, 'Name is required'),
-    contactEmail: z.string().trim().email('Valid email is required'),
-    contactPhone: z.string().trim().optional(),
-    pan: panField,
-    gstin: gstinField,
-    city: z.string().trim().optional(),
-    state: z.string().trim().optional(),
+    legalName: z.string().min(1),
+    contactEmail: z.string().email(),
+    contactPhone: z.string().optional(),
+    pan: z.string().regex(PAN_REGEX).optional(),
+    gstin: z.string().regex(GSTIN_REGEX).optional(),
+    city: z.string().optional(),
+    state: z.string().optional(),
   }),
   z.object({
     source: z.literal('directory'),
-    directoryVendorId: z.string(),
+    vendorId: z.string().min(1),
   }),
 ]);
 export type AddCandidateInput = z.infer<typeof addCandidateSchema>;
@@ -65,30 +48,26 @@ export const addCandidatesSchema = z.object({
 });
 export type AddCandidatesInput = z.infer<typeof addCandidatesSchema>;
 
-// Update an existing candidate — all fields optional. Empty string clears the field.
 export const updateCandidateSchema = z.object({
-  legalName: z.string().trim().min(1).optional(),
-  contactEmail: z.string().trim().email().optional(),
-  contactPhone: z.string().trim().optional(),
-  pan: z.string().trim().transform((v) => v.toUpperCase()).refine((v) => v === '' || PAN_REGEX.test(v), 'PAN must look like AAAAA9999A').optional(),
-  gstin: z.string().trim().transform((v) => v.toUpperCase()).refine((v) => v === '' || GSTIN_REGEX.test(v), 'Invalid GSTIN format').optional(),
-  city: z.string().trim().optional(),
-  state: z.string().trim().optional(),
+  legalName: z.string().optional(),
+  contactEmail: z.string().email().optional(),
+  contactPhone: z.string().optional(),
+  pan: z.string().optional(),
+  gstin: z.string().optional(),
+  city: z.string().optional(),
+  state: z.string().optional(),
 });
 export type UpdateCandidateInput = z.infer<typeof updateCandidateSchema>;
 
-// Full requirement detail (requirement + its candidates).
 export const requirementDetailSchema = z.object({
   id: z.string(),
-  title: z.string(),
-  partCategory: z.string().nullable(),
+  requestNumber: z.string(),
+  title: z.string().nullable(),
+  category: z.string(),
+  stage: requirementStageSchema,
   processCategories: z.array(z.string()),
   plantLocation: z.string().nullable(),
   targetAwardDate: z.string().nullable(),
-  status: requestStatusSchema,
-  pipelineStep: pipelineStepSchema,
-  whoseCourt: z.enum(['Buyer', 'Vendor', 'Done']),
-  openDays: z.number().int().nonnegative(),
   createdAt: z.string(),
   candidates: z.array(candidateSchema),
 });

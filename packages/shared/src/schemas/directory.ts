@@ -1,7 +1,5 @@
-import { z } from 'zod';
-
-export const badgeStateSchema = z.enum(['VERIFIED', 'LISTED', 'STALE']);
-export type BadgeState = z.infer<typeof badgeStateSchema>;
+import { z } from "zod";
+import { badgeStateSchema, verificationCheckTypeSchema, verificationStatusSchema } from "./enums.js";
 
 export const directoryVendorSchema = z.object({
   id: z.string(),
@@ -49,11 +47,13 @@ export const vendorDetailResponseSchema = z.object({
   }),
   verificationChecks: z.array(z.object({
     id: z.string(),
-    type: z.string(),
-    status: z.string(),
+    checkType: verificationCheckTypeSchema,
+    status: verificationStatusSchema,
     matchScore: z.number().nullable(),
-    notes: z.string().nullable(),
-    verifiedAt: z.string().nullable(),
+    detail: z.any().nullable(),
+    ranAt: z.string().nullable(),
+    expiresAt: z.string().nullable(),
+    createdAt: z.string(),
   })),
 });
 export type VendorDetailResponse = z.infer<typeof vendorDetailResponseSchema>;

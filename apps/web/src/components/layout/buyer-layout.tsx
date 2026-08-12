@@ -11,6 +11,8 @@ const navItems = [
   { path: '/directory', label: 'Vendor Directory', icon: 'building' as const },
   { path: '/approvals', label: 'Approvals', icon: 'clipboard-check' as const },
   { path: '/sla-settings', label: 'SLA Settings', icon: 'cog' as const },
+  { path: '/activity', label: 'Activity', icon: 'clock' as const },
+  { path: '/team', label: 'Team', icon: 'users' as const },
 ];
 
 export function BuyerLayout() {
