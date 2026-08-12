@@ -1,19 +1,53 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import type { Candidate, InviteStatus, RequirementDetail } from '@vendor-management/shared';
-import { getRequirement, removeCandidate } from '../../lib/candidates-api.js';
+import type { ActivityListResponse, Candidate, InviteStatus, RequestStatus, RequirementDetail } from '@vendor-management/shared';
+import { getActivity, getRequirement, removeCandidate } from '../../lib/candidates-api.js';
 import { errorMessage } from '../../lib/auth-api.js';
 import { formatDate } from '../../lib/format.js';
-import { AppShell } from '../../components/AppShell.js';
 import { AddCandidateModal } from '../../components/AddCandidateModal.js';
 import { EditCandidateModal } from '../../components/EditCandidateModal.js';
 import { SendInvitesModal } from '../../components/SendInvitesModal.js';
-import { Button, Card, Spinner, StageBadge, cn } from '../../components/ui.js';
+import { Button, Card, Spinner, cn } from '../../components/ui.js';
+import { PipelineStepper } from '../../components/organisms/PipelineStepper.js';
+import { ActivityItem } from '../../components/molecules/ActivityItem.js';
+import { Badge } from '../../components/atoms/Badge.js';
+
+const STATUS_BADGE_VARIANT: Record<RequestStatus, 'success' | 'warning' | 'danger' | 'info' | 'neutral'> = {
+  DRAFT: 'neutral',
+  CANDIDATES_SELECTED: 'info',
+  INVITES_DISPATCHED: 'info',
+  PREQUAL_IN_PROGRESS: 'warning',
+  PREQUAL_COMPLETE: 'warning',
+  AWARDED: 'success',
+  FULL_PACK_SUBMITTED: 'info',
+  DEEP_VERIFICATION: 'warning',
+  APPROVALS_IN_PROGRESS: 'warning',
+  CONTRACT_REVIEW: 'info',
+  ERP_PUSH: 'info',
+  COMPLETED: 'success',
+  CANCELLED: 'danger',
+};
+
+const STATUS_LABEL: Record<RequestStatus, string> = {
+  DRAFT: 'Draft',
+  CANDIDATES_SELECTED: 'Candidates selected',
+  INVITES_DISPATCHED: 'Invites sent',
+  PREQUAL_IN_PROGRESS: 'Pre-qualification in progress',
+  PREQUAL_COMPLETE: 'Pre-qualification complete',
+  AWARDED: 'Awarded',
+  FULL_PACK_SUBMITTED: 'Full pack submitted',
+  DEEP_VERIFICATION: 'Deep verification',
+  APPROVALS_IN_PROGRESS: 'Approvals in progress',
+  CONTRACT_REVIEW: 'Contract review',
+  ERP_PUSH: 'ERP push',
+  COMPLETED: 'Completed',
+  CANCELLED: 'Cancelled',
+};
 
 type LoadState =
   | { readonly kind: 'loading' }
   | { readonly kind: 'error'; readonly message: string }
-  | { readonly kind: 'ready'; readonly detail: RequirementDetail };
+  | { readonly kind: 'ready'; readonly detail: RequirementDetail; readonly activities: ActivityListResponse['activities'] };
 
 const INVITE_STATUS: Record<InviteStatus, { readonly label: string; readonly className: string }> = {
   PENDING: { label: 'Not invited', className: 'bg-slate-100 text-slate-600' },
@@ -61,8 +95,8 @@ export function RequirementDetailPage(): React.ReactElement {
 
   function load(): void {
     setState({ kind: 'loading' });
-    void getRequirement(id)
-      .then((detail) => setState({ kind: 'ready', detail }))
+    Promise.all([getRequirement(id), getActivity(id)])
+      .then(([detail, activities]) => setState({ kind: 'ready', detail, activities }))
       .catch((error: unknown) => setState({ kind: 'error', message: errorMessage(error, 'Requirement not found.') }));
   }
 
@@ -72,15 +106,15 @@ export function RequirementDetailPage(): React.ReactElement {
     setRowError(null);
     try {
       await removeCandidate(id, candidate.id);
-      const detail = await getRequirement(id);
-      setState({ kind: 'ready', detail });
+      const [detail, activities] = await Promise.all([getRequirement(id), getActivity(id)]);
+      setState({ kind: 'ready', detail, activities });
     } catch (error: unknown) {
       setRowError(errorMessage(error, 'Could not remove the candidate.'));
     }
   }
 
   return (
-    <AppShell>
+    <>
       <Link to="/dashboard" className="text-sm text-slate-500 hover:text-slate-700">
         ← Back to requirements
       </Link>
@@ -105,6 +139,7 @@ export function RequirementDetailPage(): React.ReactElement {
       {state.kind === 'ready' && (
         <Ready
           detail={state.detail}
+          activities={state.activities}
           onAdd={() => setModalOpen(true)}
           onSend={() => setSendOpen(true)}
           onRemove={onRemove}
@@ -121,7 +156,7 @@ export function RequirementDetailPage(): React.ReactElement {
             open={modalOpen}
             onClose={() => setModalOpen(false)}
             requirementId={id}
-            onUpdated={(detail) => setState({ kind: 'ready', detail })}
+            onUpdated={(detail) => setState({ kind: 'ready', detail, activities: state.activities })}
           />
           <EditCandidateModal
             open={editCandidate !== null}
@@ -129,7 +164,7 @@ export function RequirementDetailPage(): React.ReactElement {
             requirementId={id}
             candidate={editCandidate}
             onUpdated={(detail) => {
-              setState({ kind: 'ready', detail });
+              setState({ kind: 'ready', detail, activities: state.activities });
               setEditCandidate(null);
             }}
           />
@@ -140,18 +175,19 @@ export function RequirementDetailPage(): React.ReactElement {
             pending={state.detail.candidates.filter((c) => c.inviteStatus === 'PENDING')}
             selectedIds={selectedIds}
             onDispatched={(detail) => {
-              setState({ kind: 'ready', detail });
+              setState({ kind: 'ready', detail, activities: state.activities });
               setSelectedIds(new Set());
             }}
           />
         </>
       )}
-    </AppShell>
+    </>
   );
 }
 
 function Ready({
   detail,
+  activities,
   onAdd,
   onSend,
   onRemove,
@@ -161,6 +197,7 @@ function Ready({
   rowError,
 }: {
   readonly detail: RequirementDetail;
+  readonly activities: ActivityListResponse['activities'];
   readonly onAdd: () => void;
   readonly onSend: () => void;
   readonly onRemove: (c: Candidate) => void;
@@ -169,7 +206,7 @@ function Ready({
   readonly onSelectChange: (ids: Set<string>) => void;
   readonly rowError: string | null;
 }): React.ReactElement {
-  const { title, stage, partCategory, plantLocation, targetAwardDate, processCategories, candidates } = detail;
+  const { title, status, partCategory, plantLocation, targetAwardDate, processCategories, candidates, whoseCourt, openDays } = detail;
   const pendingCount = candidates.filter((c) => c.inviteStatus === 'PENDING').length;
 
   return (
@@ -178,7 +215,17 @@ function Ready({
         <div>
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold tracking-tight">{title}</h1>
-            <StageBadge stage={stage} />
+            <Badge variant={STATUS_BADGE_VARIANT[status] ?? 'neutral'}>
+              {STATUS_LABEL[status] ?? status}
+            </Badge>
+            <span className="rounded-md border border-slate-200 px-2.5 py-1 text-xs">
+              <span className="text-slate-400 uppercase text-[10px]">Whose court</span>
+              <span className="ml-1 font-semibold">{whoseCourt}</span>
+            </span>
+            <span className="rounded-md border border-slate-200 px-2.5 py-1 text-xs">
+              <span className="text-slate-400 uppercase text-[10px]">Open</span>
+              <span className="ml-1 font-semibold">Day {openDays}</span>
+            </span>
           </div>
           <div className="mt-2 flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-500">
             {partCategory && <span>{partCategory}</span>}
@@ -188,6 +235,13 @@ function Ready({
           </div>
         </div>
       </div>
+
+      <Card className="mt-6 p-6">
+        <h2 className="text-lg font-semibold">Where this request stands</h2>
+        <div className="mt-4">
+          <PipelineStepper status={status} />
+        </div>
+      </Card>
 
       <div className="mt-8 flex items-center justify-between">
         <h2 className="text-lg font-semibold">
@@ -330,6 +384,20 @@ function Ready({
           </div>
         </Card>
       )}
+
+      <Card className="mt-6 p-6">
+        <h2 className="text-lg font-semibold">Activity</h2>
+        <p className="mt-1 text-sm text-slate-500">Every step, with who did it and when.</p>
+        {activities.length === 0 ? (
+          <p className="mt-4 text-sm text-slate-400">Nothing has happened yet.</p>
+        ) : (
+          <div className="mt-4">
+            {activities.map((a, i) => (
+              <ActivityItem key={a.id} action={a.action} message={a.message} timestamp={a.createdAt} isLast={i === activities.length - 1} />
+            ))}
+          </div>
+        )}
+      </Card>
     </>
   );
 }

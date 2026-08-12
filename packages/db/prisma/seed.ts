@@ -87,13 +87,33 @@ async function main(): Promise<void> {
     console.log(`[seed] Requests already exist (${existingReqs}), skipped`);
   }
 
+  // --- SLA Rules ---
+  const existingRules = await prisma.slaRule.count();
+  if (existingRules === 0) {
+    const slaRules = [
+      { stage: 'FINANCIAL_CRIME' as const, slaDays: 3, escalateAfterBreach: true },
+      { stage: 'COMPLIANCE' as const, slaDays: 3, escalateAfterBreach: true },
+      { stage: 'LEGAL' as const, slaDays: 3, escalateAfterBreach: true },
+      { stage: 'IT_INFOSEC' as const, slaDays: 4, escalateAfterBreach: true },
+      { stage: 'TAX' as const, slaDays: 5, escalateAfterBreach: true },
+      { stage: 'PROCUREMENT' as const, slaDays: 3, escalateAfterBreach: true },
+      { stage: 'DATA_PRIVACY' as const, slaDays: 3, escalateAfterBreach: true },
+      { stage: 'BUSINESS_OWNER' as const, slaDays: 5, escalateAfterBreach: true },
+    ];
+    await prisma.slaRule.createMany({ data: slaRules });
+    console.log(`[seed] Created ${slaRules.length} SLA rules`);
+  } else {
+    console.log(`[seed] SLA rules already exist (${existingRules}), skipped`);
+  }
+
   try {
-    const [userCount, vendorCount, reqCount, candCount, inviteCount] = await Promise.all([
+    const [userCount, vendorCount, reqCount, candCount, inviteCount, slaRuleCount] = await Promise.all([
       prisma.user.count(),
       prisma.vendor.count(),
       prisma.vendorRequest.count(),
       prisma.requestCandidate.count(),
       prisma.vendorInvitation.count(),
+      prisma.slaRule.count(),
     ]);
     console.log('\n[seed] done:');
     console.log(`  User:              ${userCount}`);
@@ -101,6 +121,7 @@ async function main(): Promise<void> {
     console.log(`  VendorRequest:     ${reqCount}`);
     console.log(`  RequestCandidate:  ${candCount}`);
     console.log(`  VendorInvitation:  ${inviteCount}`);
+    console.log(`  SlaRule:           ${slaRuleCount}`);
   } catch {
     console.log('\n[seed] done (summary skipped — transient DB connection drop)');
   }

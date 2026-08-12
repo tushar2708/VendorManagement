@@ -1,12 +1,17 @@
 import {
   requirementDetailResponseSchema,
   directoryListResponseSchema,
+  directoryFiltersResponseSchema,
+  vendorDetailResponseSchema,
   inviteResponseSchema,
+  activityListResponseSchema,
   type RequirementDetail,
   type DirectoryVendor,
   type AddCandidateInput,
   type UpdateCandidateInput,
   type InviteResponse,
+  type VendorDetailResponse,
+  type ActivityListResponse,
 } from '@vendor-management/shared';
 import { http } from './http.js';
 
@@ -51,4 +56,21 @@ export async function updateCandidate(
 export async function dispatchInvites(requirementId: string, candidateIds?: string[]): Promise<InviteResponse> {
   const response = await http.post(`/api/requirements/${requirementId}/invites`, { candidateIds });
   return inviteResponseSchema.parse(response.data);
+}
+
+export async function getDirectoryFilters(): Promise<{ processes: string[]; states: string[] }> {
+  const response = await http.get('/api/directory/filters');
+  return directoryFiltersResponseSchema.parse(response.data);
+}
+
+export type { VendorDetailResponse };
+
+export async function getVendorDetail(id: string): Promise<VendorDetailResponse> {
+  const response = await http.get(`/api/directory/${id}`);
+  return vendorDetailResponseSchema.parse(response.data);
+}
+
+export async function getActivity(requirementId: string): Promise<ActivityListResponse['activities']> {
+  const response = await http.get(`/api/requirements/${requirementId}/activity`);
+  return activityListResponseSchema.parse(response.data).activities;
 }

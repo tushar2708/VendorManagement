@@ -1,6 +1,4 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
-import type { RequirementStage } from '@vendor-management/shared';
-import { STAGE_STYLE } from '../lib/stage.js';
 
 export function cn(...parts: Array<string | false | null | undefined>): string {
   return parts.filter(Boolean).join(' ');
@@ -45,21 +43,6 @@ export function Spinner({ className }: { readonly className?: string }): React.R
         className,
       )}
     />
-  );
-}
-
-export function StageBadge({ stage }: { readonly stage: RequirementStage }): React.ReactElement {
-  const style = STAGE_STYLE[stage];
-  return (
-    <span
-      className={cn(
-        'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ring-1 ring-inset',
-        style.badge,
-      )}
-    >
-      <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
-      {style.label}
-    </span>
   );
 }
 

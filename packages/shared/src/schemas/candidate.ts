@@ -1,5 +1,6 @@
 import { z } from 'zod';
-import { requirementStageSchema } from './requirement.js';
+import { requestStatusSchema } from './enums.js';
+import { pipelineStepSchema } from './requirement.js';
 import { inviteStatusSchema } from './enums.js';
 
 export const candidateSourceSchema = z.enum(['MANUAL', 'DIRECTORY']);
@@ -84,7 +85,10 @@ export const requirementDetailSchema = z.object({
   processCategories: z.array(z.string()),
   plantLocation: z.string().nullable(),
   targetAwardDate: z.string().nullable(),
-  stage: requirementStageSchema,
+  status: requestStatusSchema,
+  pipelineStep: pipelineStepSchema,
+  whoseCourt: z.enum(['Buyer', 'Vendor', 'Done']),
+  openDays: z.number().int().nonnegative(),
   createdAt: z.string(),
   candidates: z.array(candidateSchema),
 });

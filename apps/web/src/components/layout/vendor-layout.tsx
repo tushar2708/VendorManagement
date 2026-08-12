@@ -1,61 +1,59 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/use-auth.js";
-import { logout } from "@/lib/auth-client.js";
+import { Outlet } from 'react-router-dom';
+import { useAuth } from '@/hooks/use-auth.js';
+import { logout } from '@/lib/auth-client.js';
+import { NavItem } from '../molecules/NavItem.js';
+import { Avatar } from '../atoms/Avatar.js';
+import { Badge } from '../atoms/Badge.js';
 
 const navItems = [
-  { path: "/vendor/dashboard", label: "Dashboard" },
-  { path: "/vendor/prequal", label: "Verification" },
-  { path: "/vendor/full-pack", label: "Documents" },
-  { path: "/vendor/contract", label: "Contract" },
-  { path: "/vendor/profile", label: "Profile" },
+  { path: '/vendor/dashboard', label: 'Dashboard', icon: 'grid' as const },
+  { path: '/vendor/prequal', label: 'Pre-qualification', icon: 'shield' as const },
+  { path: '/vendor/full-pack', label: 'Documents', icon: 'file-text' as const },
+  { path: '/vendor/contract', label: 'Contract', icon: 'clipboard-check' as const },
+  { path: '/vendor/profile', label: 'Profile', icon: 'users' as const },
 ];
 
-export function VendorLayout() {
+export function VendorLayout(): React.ReactElement {
   const { user, refresh } = useAuth();
-  const location = useLocation();
 
-  async function handleLogout() {
+  async function handleLogout(): Promise<void> {
     await logout();
     await refresh();
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="border-b border-slate-200 bg-white px-4 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <h2 className="text-lg font-bold text-slate-900">VendorMgmt</h2>
-            <nav className="flex gap-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.path}
-                  to={item.path}
-                  className={`rounded-md px-3 py-1.5 text-sm ${
-                    location.pathname.startsWith(item.path)
-                      ? "bg-slate-100 font-medium text-slate-900"
-                      : "text-slate-600 hover:bg-slate-50"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-          <div className="flex items-center gap-3">
-            <span className="text-sm text-slate-600">{user?.name}</span>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="rounded-md px-3 py-1.5 text-sm text-slate-600 hover:bg-slate-50"
-            >
-              Sign out
-            </button>
+    <div className="flex min-h-screen">
+      <aside className="flex w-56 flex-col bg-slate-800">
+        <div className="flex items-center gap-2.5 px-4 py-5">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-emerald-600 text-sm font-bold text-white">VM</div>
+          <div className="leading-tight">
+            <p className="text-sm font-semibold text-white">Vendor Management</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-emerald-400">Vendor View</p>
           </div>
         </div>
-      </header>
-      <main className="p-6">
-        <Outlet />
-      </main>
+        <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
+          {navItems.map((item) => <NavItem key={item.path} path={item.path} label={item.label} icon={item.icon} />)}
+        </nav>
+        <div className="border-t border-slate-700 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Avatar name={user?.name ?? '?'} size="sm" />
+            <span className="truncate text-xs text-slate-300">{user?.name}</span>
+          </div>
+          <button type="button" onClick={handleLogout} className="mt-2 w-full rounded-md px-2 py-1.5 text-left text-xs text-slate-400 hover:bg-slate-700 hover:text-white transition-colors">
+            Sign out
+          </button>
+        </div>
+      </aside>
+      <div className="flex flex-1 flex-col">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+          <Badge variant="success">VENDOR VIEW</Badge>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-slate-500 sm:inline">{user?.name}</span>
+            <Avatar name={user?.name ?? '?'} size="md" />
+          </div>
+        </header>
+        <main className="flex-1 bg-slate-50 p-6 lg:p-8"><Outlet /></main>
+      </div>
     </div>
   );
 }

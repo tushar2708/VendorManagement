@@ -7,22 +7,10 @@ import {
   type DirectoryVendor,
   type RequirementDetail,
 } from '@vendor-management/shared';
-import { addCandidates, getDirectory } from '../lib/candidates-api.js';
+import { addCandidates, getDirectory, getDirectoryFilters } from '../lib/candidates-api.js';
 import { errorMessage } from '../lib/auth-api.js';
 import { Modal } from './Modal.js';
 import { Button, cn } from './ui.js';
-
-const PROCESS_OPTIONS = [
-  'HPDC',
-  'Gravity Casting',
-  'CNC Turning',
-  'VMC',
-  'Forging',
-  'Sheet Metal',
-  'Heat Treatment',
-  'Plating',
-];
-const STATE_OPTIONS = ['Maharashtra', 'Tamil Nadu', 'Haryana', 'Gujarat', 'Punjab'];
 
 const inputClass =
   'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20';
@@ -92,6 +80,11 @@ function DirectoryTab({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [filters, setFilters] = useState<{ processes: string[]; states: string[] }>({ processes: [], states: [] });
+
+  useEffect(() => {
+    getDirectoryFilters().then(setFilters).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -149,7 +142,7 @@ function DirectoryTab({
         />
         <select value={process} onChange={(e) => setProcess(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-2 text-sm">
           <option value="">All processes</option>
-          {PROCESS_OPTIONS.map((p) => (
+          {filters.processes.map((p) => (
             <option key={p} value={p}>
               {p}
             </option>
@@ -157,7 +150,7 @@ function DirectoryTab({
         </select>
         <select value={state} onChange={(e) => setState(e.target.value)} className="rounded-lg border border-slate-300 px-2 py-2 text-sm">
           <option value="">All states</option>
-          {STATE_OPTIONS.map((s) => (
+          {filters.states.map((s) => (
             <option key={s} value={s}>
               {s}
             </option>

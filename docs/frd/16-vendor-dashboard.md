@@ -94,6 +94,23 @@ Steps connect with a vertical line. The line is dark for completed segments and 
 | Sign contract | Click (when current step = contract) | Navigates to contract review page | Toast: "Failed to load contract" |
 | Message requester | Click (always visible) | Opens a message form | Toast: "Failed to open message form" |
 
+## Design decision: pipeline visibility
+
+The mock (journey viewer, step 5 -- "Submitted -- status tracker") shows the vendor seeing the full 6-step buyer pipeline: Submitted, Finance, Legal, IT/Sec, Quality, Activated.
+
+This FRD deliberately collapses those internal buyer steps into one "Under review" step.
+
+**Rationale**:
+
+- Individual approver names (Finance, Legal, IT/Security, Quality) are internal to the buyer organization.
+- SLA durations per approver are buyer-confidential data.
+- Exposing internal steps would set false expectations when a single approver is slow.
+- The vendor needs only two facts: "your submission is under review" and "action is needed from you."
+
+The vendor dashboard uses these six steps instead: Registration submitted, Identity verified, Documents uploaded, Under review, Contract signing, Onboarded. This mapping hides buyer-side structure while preserving progress transparency.
+
+---
+
 ## Business rules
 
 1. Show only the vendor's own onboarding requests. Do not show other vendors' data.

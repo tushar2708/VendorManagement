@@ -8,6 +8,30 @@ export const directoryRouter = Router();
 
 directoryRouter.use(requireAuth);
 
+directoryRouter.get('/filters', async (_req, res, next) => {
+  try {
+    const vendors = await prisma.vendor.findMany({
+      where: { isInDirectory: true },
+      select: { processTags: true, state: true },
+    });
+
+    const processSet = new Set<string>();
+    const stateSet = new Set<string>();
+
+    for (const v of vendors) {
+      for (const tag of v.processTags) processSet.add(tag);
+      if (v.state) stateSet.add(v.state);
+    }
+
+    res.json({
+      processes: [...processSet].sort(),
+      states: [...stateSet].sort(),
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
 directoryRouter.get('/', async (req, res, next) => {
   try {
     const parsed = directoryQuerySchema.safeParse(req.query);
@@ -48,6 +72,58 @@ directoryRouter.get('/', async (req, res, next) => {
     }));
 
     res.json({ vendors });
+  } catch (error) {
+    next(error);
+  }
+});
+
+directoryRouter.get('/:id', async (req, res, next) => {
+  try {
+    const id = req.params.id as string;
+    const vendor = await prisma.vendor.findUnique({
+      where: { id },
+      include: {
+        verificationChecks: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    if (!vendor) {
+      res.status(404).json({ error: 'Vendor not found' });
+      return;
+    }
+
+    const now = new Date();
+    const twelveMonthsAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+    const isStale = vendor.isVerified && vendor.updatedAt < twelveMonthsAgo;
+
+    res.json({
+      vendor: {
+        id: vendor.id,
+        legalName: vendor.name,
+        contactEmail: vendor.contactEmail,
+        pan: vendor.panNumber,
+        primaryGstin: vendor.gstin,
+        udyamNumber: vendor.udyamNumber,
+        vendorCode: vendor.vendorCode,
+        category: vendor.category,
+        vendorType: vendor.vendorType,
+        city: vendor.city,
+        state: vendor.state,
+        processTags: vendor.processTags,
+        certifications: vendor.certifications,
+        prequalScore: vendor.prequalScore,
+        isVerified: vendor.isVerified,
+        badgeState: isStale ? 'STALE' : vendor.isVerified ? 'VERIFIED' : 'LISTED',
+        createdAt: vendor.createdAt.toISOString(),
+      },
+      verificationChecks: vendor.verificationChecks.map((vc) => ({
+        id: vc.id,
+        type: vc.type,
+        status: vc.status,
+        matchScore: vc.matchScore,
+        notes: vc.notes,
+        verifiedAt: vc.verifiedAt ? vc.verifiedAt.toISOString() : null,
+      })),
+    });
   } catch (error) {
     next(error);
   }

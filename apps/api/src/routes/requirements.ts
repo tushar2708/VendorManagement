@@ -21,10 +21,110 @@ import { generateRequestNumber } from '../services/request-number.js';
 
 const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
+type PipelineStep = 'INTAKE_AND_INVITE' | 'VERIFICATION' | 'AWARD_AND_FULL_PACK' | 'GOVERNANCE' | 'CONTRACT' | 'ACTIVATED';
+type WhoseCourt = 'Buyer' | 'Vendor' | 'Done';
+
+const STATUS_TO_STEP: Record<string, PipelineStep> = {
+  DRAFT: 'INTAKE_AND_INVITE',
+  CANDIDATES_SELECTED: 'INTAKE_AND_INVITE',
+  INVITES_DISPATCHED: 'INTAKE_AND_INVITE',
+  PREQUAL_IN_PROGRESS: 'VERIFICATION',
+  PREQUAL_COMPLETE: 'VERIFICATION',
+  AWARDED: 'AWARD_AND_FULL_PACK',
+  FULL_PACK_SUBMITTED: 'AWARD_AND_FULL_PACK',
+  DEEP_VERIFICATION: 'GOVERNANCE',
+  APPROVALS_IN_PROGRESS: 'GOVERNANCE',
+  CONTRACT_REVIEW: 'CONTRACT',
+  ERP_PUSH: 'ACTIVATED',
+  COMPLETED: 'ACTIVATED',
+  CANCELLED: 'ACTIVATED',
+};
+
+const VENDOR_STATUSES = new Set(['PREQUAL_IN_PROGRESS', 'FULL_PACK_SUBMITTED', 'CONTRACT_REVIEW']);
+const DONE_STATUSES = new Set(['COMPLETED', 'CANCELLED']);
+
+function getPipelineStep(status: string): PipelineStep {
+  return STATUS_TO_STEP[status] ?? 'INTAKE_AND_INVITE';
+}
+
+function getWhoseCourt(status: string): WhoseCourt {
+  if (DONE_STATUSES.has(status)) return 'Done';
+  if (VENDOR_STATUSES.has(status)) return 'Vendor';
+  return 'Buyer';
+}
+
+function getOpenDays(createdAt: Date): number {
+  return Math.max(0, Math.floor((Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24)));
+}
+
+async function logActivity(requestId: string, userId: string, action: string, message: string): Promise<void> {
+  await prisma.activityLog.create({
+    data: { action: action as any, message, requestId, userId },
+  });
+}
+
 export const requirementsRouter = Router();
 
 // Every route is user-scoped from Better Auth — a buyer never sees another user's data.
 requirementsRouter.use(requireAuth);
+
+requirementsRouter.get('/stats', async (req, res, next) => {
+  try {
+    const userId = req.user!.userId;
+
+    const [allRequests, candidatesWithInvites] = await Promise.all([
+      prisma.vendorRequest.findMany({
+        where: { createdById: userId },
+        select: { status: true, createdAt: true },
+      }),
+      prisma.requestCandidate.findMany({
+        where: { request: { createdById: userId }, inviteStatus: { in: ['OPENED', 'REGISTERED'] } },
+        select: { vendorId: true },
+      }),
+    ]);
+
+    const now = Date.now();
+    const activeStatuses = new Set([
+      'DRAFT', 'CANDIDATES_SELECTED', 'INVITES_DISPATCHED',
+      'PREQUAL_IN_PROGRESS', 'PREQUAL_COMPLETE', 'AWARDED',
+      'FULL_PACK_SUBMITTED', 'DEEP_VERIFICATION', 'APPROVALS_IN_PROGRESS',
+      'CONTRACT_REVIEW', 'ERP_PUSH',
+    ]);
+    const buyerStatuses = new Set([
+      'DRAFT', 'CANDIDATES_SELECTED', 'PREQUAL_COMPLETE',
+      'AWARDED', 'DEEP_VERIFICATION', 'APPROVALS_IN_PROGRESS', 'ERP_PUSH',
+    ]);
+
+    let active = 0;
+    let waitingOnYou = 0;
+    let completed = 0;
+    let openLongestMs = 0;
+
+    for (const r of allRequests) {
+      if (r.status === 'COMPLETED') {
+        completed++;
+      } else if (activeStatuses.has(r.status)) {
+        active++;
+        const age = now - r.createdAt.getTime();
+        if (age > openLongestMs) openLongestMs = age;
+        if (buyerStatuses.has(r.status)) waitingOnYou++;
+      }
+    }
+
+    const vendorsOnboarded = new Set(candidatesWithInvites.map((c) => c.vendorId)).size;
+    const openLongestDays = Math.floor(openLongestMs / (1000 * 60 * 60 * 24));
+
+    res.json({
+      active,
+      waitingOnYou,
+      completed,
+      vendorsOnboarded,
+      openLongestDays,
+    });
+  } catch (error) {
+    next(error);
+  }
+});
 
 interface RequirementRow {
   id: string;
@@ -46,29 +146,13 @@ function toSummary(r: RequirementRow): RequirementSummary {
     processCategories: r.processCategories,
     plantLocation: r.plantLocation,
     targetAwardDate: r.targetAwardDate ? r.targetAwardDate.toISOString() : null,
-    stage: mapStatusToStage(r.status),
+    status: r.status as RequirementSummary['status'],
+    pipelineStep: getPipelineStep(r.status),
+    whoseCourt: getWhoseCourt(r.status),
+    openDays: getOpenDays(r.createdAt),
     candidateCount: r._count.candidates,
     createdAt: r.createdAt.toISOString(),
   };
-}
-
-function mapStatusToStage(status: string): RequirementSummary['stage'] {
-  const statusMap: Record<string, RequirementSummary['stage']> = {
-    DRAFT: 'DRAFT',
-    CANDIDATES_SELECTED: 'CANDIDATES_SELECTED',
-    INVITES_DISPATCHED: 'INVITES_SENT',
-    PREQUAL_IN_PROGRESS: 'IN_PROGRESS',
-    PREQUAL_COMPLETE: 'IN_PROGRESS',
-    AWARDED: 'CLOSED',
-    FULL_PACK_SUBMITTED: 'IN_PROGRESS',
-    DEEP_VERIFICATION: 'IN_PROGRESS',
-    APPROVALS_IN_PROGRESS: 'IN_PROGRESS',
-    CONTRACT_REVIEW: 'IN_PROGRESS',
-    ERP_PUSH: 'IN_PROGRESS',
-    COMPLETED: 'CLOSED',
-    CANCELLED: 'CLOSED',
-  };
-  return statusMap[status] || 'DRAFT';
 }
 
 interface CandidateRow {
@@ -128,14 +212,15 @@ requirementsRouter.post('/', validateBody(createRequirementSchema), async (req, 
         createdById: req.user!.userId,
         title: input.title,
         category: input.partCategory ?? '',
-        process: 'RFQ',
-        vendorType: 'PRODUCTION_PART',
+        process: input.process ?? 'RFQ',
+        vendorType: input.vendorType ?? 'PRODUCTION_PART',
         processCategories: input.processCategories,
         plantLocation: input.plantLocation ?? null,
         targetAwardDate: input.targetAwardDate ? new Date(input.targetAwardDate) : null,
       },
       include: { _count: { select: { candidates: true } } },
     });
+    await logActivity(created.id, req.user!.userId, 'REQUEST_CREATED', 'Requirement created');
     res.status(201).json({ requirement: toSummary(created) });
   } catch (error) {
     next(error);
@@ -156,7 +241,10 @@ async function loadDetail(userId: string, id: string): Promise<RequirementDetail
     processCategories: r.processCategories,
     plantLocation: r.plantLocation,
     targetAwardDate: r.targetAwardDate ? r.targetAwardDate.toISOString() : null,
-    stage: mapStatusToStage(r.status),
+    status: r.status as any,
+    pipelineStep: getPipelineStep(r.status),
+    whoseCourt: getWhoseCourt(r.status),
+    openDays: getOpenDays(r.createdAt),
     createdAt: r.createdAt.toISOString(),
     candidates: r.candidates.map(toCandidate),
   };
@@ -170,6 +258,38 @@ requirementsRouter.get('/:id', async (req, res, next) => {
       return;
     }
     res.json({ requirement: detail });
+  } catch (error) {
+    next(error);
+  }
+});
+
+requirementsRouter.get('/:id/activity', async (req, res, next) => {
+  try {
+    const userId = req.user!.userId;
+    const requirementId = req.params.id as string;
+    const requirement = await prisma.vendorRequest.findFirst({
+      where: { id: requirementId, createdById: userId },
+      select: { id: true },
+    });
+    if (!requirement) {
+      res.status(404).json({ error: 'Requirement not found' });
+      return;
+    }
+    const activities = await prisma.activityLog.findMany({
+      where: { requestId: requirementId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: { id: true, action: true, message: true, metadata: true, createdAt: true },
+    });
+    res.json({
+      activities: activities.map((a) => ({
+        id: a.id,
+        action: a.action,
+        message: a.message,
+        metadata: a.metadata,
+        createdAt: a.createdAt.toISOString(),
+      })),
+    });
   } catch (error) {
     next(error);
   }
@@ -302,6 +422,7 @@ requirementsRouter.post('/:id/candidates', validateBody(addCandidatesSchema), as
       }
     });
 
+    await logActivity(requirementId, userId, 'CANDIDATES_SELECTED', `${dataToCreate.length} candidate(s) added`);
     const detail = await loadDetail(userId, requirementId);
     res.status(201).json({ requirement: detail, added: dataToCreate.length });
   } catch (error) {
@@ -436,6 +557,7 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
       });
     }
 
+    await logActivity(requirementId, userId, 'INVITES_DISPATCHED', `${results.length} invite(s) sent`);
     const detail = await loadDetail(userId, requirementId);
     res.json({ results, requirement: detail });
   } catch (error) {

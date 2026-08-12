@@ -47,3 +47,35 @@ export function nextStageAfterInvites(current: RequestStatus): RequestStatus | n
   if (current === "DRAFT" || current === "CANDIDATES_SELECTED") return "INVITES_DISPATCHED";
   return null;
 }
+
+export function nextStageAfterPrequal(current: RequestStatus): RequestStatus | null {
+  if (current === 'INVITES_DISPATCHED') return 'PREQUAL_IN_PROGRESS';
+  if (current === 'PREQUAL_IN_PROGRESS') return 'PREQUAL_COMPLETE';
+  return null;
+}
+
+export function nextStageAfterAward(current: RequestStatus): RequestStatus | null {
+  if (current === 'PREQUAL_COMPLETE') return 'AWARDED';
+  return null;
+}
+
+export function nextStageAfterFullPack(current: RequestStatus): RequestStatus | null {
+  if (current === 'AWARDED') return 'FULL_PACK_SUBMITTED';
+  return null;
+}
+
+export function nextStageAfterGovernance(current: RequestStatus): RequestStatus | null {
+  if (current === 'DEEP_VERIFICATION') return 'APPROVALS_IN_PROGRESS';
+  if (current === 'APPROVALS_IN_PROGRESS') return 'CONTRACT_REVIEW';
+  return null;
+}
+
+export function nextStageAfterContract(current: RequestStatus): RequestStatus | null {
+  if (current === 'CONTRACT_REVIEW') return 'ERP_PUSH';
+  return null;
+}
+
+export function nextStageAfterErp(current: RequestStatus): RequestStatus | null {
+  if (current === 'ERP_PUSH') return 'COMPLETED';
+  return null;
+}

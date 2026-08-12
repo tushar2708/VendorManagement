@@ -43,7 +43,16 @@ export type DocumentCategory = z.infer<typeof documentCategorySchema>;
 export const documentStatusSchema = z.enum(["PENDING", "UPLOADED", "VERIFIED", "REJECTED"]);
 export type DocumentStatus = z.infer<typeof documentStatusSchema>;
 
-export const approvalStageSchema = z.enum(["FINANCE", "LEGAL", "IT_SECURITY", "QUALITY"]);
+export const approvalStageSchema = z.enum([
+  "FINANCIAL_CRIME",
+  "COMPLIANCE",
+  "LEGAL",
+  "IT_INFOSEC",
+  "TAX",
+  "PROCUREMENT",
+  "DATA_PRIVACY",
+  "BUSINESS_OWNER",
+]);
 export type ApprovalStage = z.infer<typeof approvalStageSchema>;
 
 export const approvalStatusSchema = z.enum(["PENDING", "IN_PROGRESS", "APPROVED", "REJECTED", "ESCALATED"]);
