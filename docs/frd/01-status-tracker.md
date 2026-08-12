@@ -19,13 +19,43 @@ The buyer tracks vendor onboarding requests and their approval pipeline status.
 
 ## Exit points
 
-- Click a request card to open the vendor detail view.
+- Click a request card to navigate to `/requests/:id` (requirement detail page).
 - Click "Send reminder" to trigger an email to the approver.
 - Click "Message requester" (mobile) to open a message form.
 
 ---
 
-## Desktop layout (Screen 1a)
+## Layout variants
+
+The dashboard has two layout variants. The code implements **Variant A** (card grid). The mock shows **Variant B** (sidebar detail view). Both are documented here.
+
+### Variant A — Card grid (implemented)
+
+**Route**: `/dashboard`
+
+**Structure**: Full-width page with filter chips and a responsive card grid.
+
+| Element | Type | Label / Value | State | Behavior |
+|---------|------|---------------|-------|----------|
+| Page title | Heading (h1) | "Requirements" | Static | Read-only |
+| Subtitle | Text | "Create a requirement, shortlist vendors, and dispatch invites." | Static | Read-only |
+| New requirement button | Link + Button | "New requirement" with plus icon | Enabled | Navigates to `/requests/new` |
+| Filter chips | Chip row | "All" plus one chip per stage with non-zero count | Toggle | Filters the card grid to the selected stage |
+| Requirement cards | Responsive grid | 1 column (mobile), 2 columns (sm), 3 columns (lg) | Populated | Each card links to `/requests/:id` |
+
+**Empty state**: A centered card with a plus icon, "No requirements yet", and a "New requirement" button.
+
+**Error state**: A centered card with the error text and a "Try again" button.
+
+**Loading state**: A centered spinner.
+
+### Variant B — Sidebar detail view (mock, not yet implemented)
+
+The mock (screens 1a, 1b) shows a different layout described below. When this variant is built, it will replace or supplement Variant A.
+
+---
+
+## Desktop layout — Variant B (Screen 1a)
 
 **Structure**: Left sidebar (220 px fixed) + main content (flex 1).
 
@@ -77,7 +107,7 @@ The buyer tracks vendor onboarding requests and their approval pipeline status.
 
 ---
 
-## Mobile layout (Screen 1b)
+## Mobile layout — Variant B (Screen 1b)
 
 **Structure**: Single column, full width.
 
@@ -102,6 +132,23 @@ The buyer tracks vendor onboarding requests and their approval pipeline status.
 | IT/Security | "IT/Security" | Empty circle |
 | Quality | "Quality" | Empty circle |
 | Activated | "Activated" | Empty circle |
+
+---
+
+## Activity log
+
+The main content area (Variant B) shows an activity log below the alert card.
+
+| Element | Type | Label / Value | State | Behavior |
+|---------|------|---------------|-------|----------|
+| Section heading | Heading (h3) | "Activity" | Static | Read-only |
+| Activity item | List item | Timestamped event text | Static | Read-only |
+
+Example items:
+- "Finance approved -- Aug 8, 4:12 pm"
+- "Submitted by Priya (Sourcing) -- Aug 1, 9:03 am"
+
+Each item shows the event description and the date with time. Items appear in reverse chronological order. A dashed separator divides items.
 
 ---
 
@@ -133,11 +180,11 @@ The buyer tracks vendor onboarding requests and their approval pipeline status.
 
 | Button / Link | Trigger | Success state | Error state |
 |---------------|---------|---------------|-------------|
-| Send reminder | Click | Toast: "Reminder sent to {approver name}" | Toast: "Failed to send reminder. Try again." |
+| Send reminder | Click | Sends an email to the approver assigned to the active (overdue) step. Toast: "Reminder sent to {approver name}". The button is visible only when the active step is overdue. | Toast: "Failed to send reminder. Try again." |
 | Search input | Keystroke | Request list filters in real time | No results message: "No requests match your search" |
 | Filter tab: All | Click | Shows all requests | N/A |
 | Filter tab: Needs my input | Click | Shows only requests that need the buyer's action | Empty list message: "No requests need your input" |
-| Request card | Click | Loads the vendor detail in main content | Toast: "Failed to load request details" |
+| Request card | Click | Navigates to `/requests/:id` (requirement detail page). In Variant B, loads the vendor detail in the main content panel. | Toast: "Failed to load request details" |
 | Back arrow (mobile) | Click | Returns to the request list | N/A |
 | Message requester (mobile) | Click | Opens a message form | Toast: "Failed to open message form" |
 

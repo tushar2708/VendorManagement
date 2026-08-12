@@ -20,8 +20,9 @@ The approver views pending approvals sorted by SLA risk and configures SLA rules
 
 ## Exit points
 
-- Click a table row to open the vendor detail view at `/dashboard?request={id}`.
+- Click a table row to navigate to the requirement detail page at `/requests/:id`.
 - Click "Save rules" to persist SLA rule changes.
+- Click "SLA rule settings" (mobile) to open the SLA rules panel.
 
 ---
 
@@ -139,10 +140,10 @@ Each card shows:
 | Filter badge (At risk) | Click | Table shows only at-risk rows | N/A |
 | Filter badge (On track) | Click | Table shows only on-track rows | N/A |
 | Sort dropdown | Change | Table re-sorts by the selected column | N/A |
-| Table row | Click | Navigates to `/dashboard?request={id}` | Toast: "Failed to load request" |
+| Table row | Click | Navigates to `/requests/:id` (requirement detail page) | Toast: "Failed to load request" |
 | Save rules | Click | Toast: "SLA rules saved." Rules persist to database. | Toast: "Failed to save rules. Try again." |
 | Escalation toggle | Toggle | Setting updates immediately | Toast: "Failed to update setting" |
-| SLA settings link (mobile) | Click | Opens the SLA rules panel | N/A |
+| SLA settings link (mobile) | Click | Opens the SLA rules panel. The panel is also accessible as a standalone page at `/sla-settings` (the router has this route). | N/A |
 
 ## Business rules
 
@@ -158,6 +159,7 @@ Each card shows:
 6. When "Escalate to manager after breach" is on, the system sends an email to the approver's manager when a step becomes overdue.
 7. Only users with the "approver" role can access this page.
 8. Each approver sees only the items assigned to their stage.
+9. The SLA rules panel is available as a standalone page at `/sla-settings`. The content and behavior match the right sidebar on desktop.
 
 ## Edge cases
 

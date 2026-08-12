@@ -1,18 +1,20 @@
-import { Link, Outlet, useLocation } from "react-router-dom";
-import { useAuth } from "@/hooks/use-auth.js";
-import { logout } from "@/lib/auth-client.js";
+import { Link, Outlet, useLocation } from 'react-router-dom';
+import { useAuth } from '@/hooks/use-auth.js';
+import { logout } from '@/lib/auth-client.js';
+import { NavItem } from '../molecules/NavItem.js';
+import { Avatar } from '../atoms/Avatar.js';
+import { Badge } from '../atoms/Badge.js';
 
 const navItems = [
-  { path: "/dashboard", label: "Dashboard" },
-  { path: "/requests/new", label: "New Request" },
-  { path: "/directory", label: "Vendor Directory" },
-  { path: "/approvals", label: "Approvals" },
-  { path: "/sla-settings", label: "SLA Settings" },
+  { path: '/dashboard', label: 'Dashboard', icon: 'grid' as const },
+  { path: '/requests/new', label: 'New Request', icon: 'plus-circle' as const },
+  { path: '/directory', label: 'Vendor Directory', icon: 'building' as const },
+  { path: '/approvals', label: 'Approvals', icon: 'clipboard-check' as const },
+  { path: '/sla-settings', label: 'SLA Settings', icon: 'cog' as const },
 ];
 
 export function BuyerLayout() {
   const { user, refresh } = useAuth();
-  const location = useLocation();
 
   async function handleLogout() {
     await logout();
@@ -21,37 +23,50 @@ export function BuyerLayout() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="w-60 border-r border-slate-200 bg-white p-4 flex flex-col">
-        <div className="mb-6">
-          <h2 className="text-lg font-bold text-slate-900">VendorMgmt</h2>
-          <p className="text-xs text-slate-500">{user?.name}</p>
+      <aside className="flex w-56 flex-col bg-slate-800">
+        <div className="flex items-center gap-2.5 px-4 py-5">
+          <div className="grid h-8 w-8 place-items-center rounded-lg bg-indigo-600 text-sm font-bold text-white">
+            VM
+          </div>
+          <div className="leading-tight">
+            <p className="text-sm font-semibold text-white">Vendor Management</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-400">Buyer View</p>
+          </div>
         </div>
-        <nav className="flex flex-col gap-1 flex-1">
+
+        <nav className="flex flex-1 flex-col gap-1 px-3 py-2">
           {navItems.map((item) => (
-            <Link
-              key={item.path}
-              to={item.path}
-              className={`rounded-md px-3 py-2 text-sm ${
-                location.pathname.startsWith(item.path)
-                  ? "bg-slate-100 font-medium text-slate-900"
-                  : "text-slate-600 hover:bg-slate-50"
-              }`}
-            >
-              {item.label}
-            </Link>
+            <NavItem key={item.path} path={item.path} label={item.label} icon={item.icon} />
           ))}
         </nav>
-        <button
-          type="button"
-          onClick={handleLogout}
-          className="mt-4 rounded-md px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 text-left"
-        >
-          Sign out
-        </button>
+
+        <div className="border-t border-slate-700 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Avatar name={user?.name ?? '?'} size="sm" />
+            <span className="truncate text-xs text-slate-300">{user?.name}</span>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="mt-2 w-full rounded-md px-2 py-1.5 text-left text-xs text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+          >
+            Sign out
+          </button>
+        </div>
       </aside>
-      <main className="flex-1 bg-slate-50 p-6">
-        <Outlet />
-      </main>
+
+      <div className="flex flex-1 flex-col">
+        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+          <Badge variant="info">BUYER VIEW</Badge>
+          <div className="flex items-center gap-3">
+            <span className="hidden text-sm text-slate-500 sm:inline">{user?.name}</span>
+            <Avatar name={user?.name ?? '?'} size="md" />
+          </div>
+        </header>
+        <main className="flex-1 bg-slate-50 p-6 lg:p-8">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

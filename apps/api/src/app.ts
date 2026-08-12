@@ -8,6 +8,11 @@ import { auth } from "./routes/auth.js";
 import { healthRouter } from "./routes/health.js";
 import { requirementsRouter } from "./routes/requirements.js";
 import { directoryRouter } from "./routes/directory.js";
+import { slaRulesRouter } from "./routes/sla-rules.js";
+import { approvalsRouter } from "./routes/approvals.js";
+import { scoringRouter } from "./routes/scoring.js";
+import { inviteRouter } from "./routes/invite.js";
+import { vendorRouter } from "./routes/vendor.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
@@ -19,7 +24,12 @@ app.all("/api/auth/*splat", toNodeHandler(auth));
 app.use(express.json({ limit: "2mb" }));
 app.use("/api", healthRouter);
 app.use("/api/requirements", requirementsRouter);
+app.use("/api/requirements", scoringRouter);
 app.use("/api/directory", directoryRouter);
+app.use("/api/sla-rules", slaRulesRouter);
+app.use("/api/approvals", approvalsRouter);
+app.use("/api/vendor", vendorRouter);
+app.use("/api/invite", inviteRouter);
 
 app.all("/api/*splat", (_request, response) => {
   response.status(404).json({ success: false, error: "API route not found" });

@@ -1,0 +1,116 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  width: 100%;
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #000000;
+  color: #ffffff;
+  font-family: "Inter", sans-serif;
+}
+
+img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.main {
+  margin-top: 5vh;
+  padding-bottom: 10vh;
+}
+
+.main h1 {
+  padding: 20px;
+  max-width: 80%;
+  font-size: 5vw;
+  font-weight: 400;
+  line-height: 1.02;
+}
+
+.gallery {
+  width: 100%;
+}
+
+.double {
+  display: flex;
+  margin-top: 10vh;
+  height: 45vw;
+}
+
+.image-container {
+  overflow: hidden;
+}
+
+.double[data-reversed="false"] .image-container:first-child {
+  width: 66.66%;
+}
+
+.double[data-reversed="false"] .image-container:last-child {
+  width: 33.33%;
+}
+
+.double[data-reversed="true"] .image-container:first-child {
+  width: 33.33%;
+}
+
+.double[data-reversed="true"] .image-container:last-child {
+  width: 66.66%;
+}
+
+.stretchy-wrapper {
+  position: relative;
+  width: 100%;
+  padding-bottom: 66%;
+}
+
+.body {
+  padding: 10px;
+  font-size: 16px;
+}
+
+.body h3 {
+  margin: 0 0 5px;
+  font-size: 1.2em;
+  font-weight: 400;
+}
+
+.body p {
+  margin: 0;
+  font-size: 1em;
+  color: rgb(187, 187, 187);
+}
+
+.body p:last-child {
+  color: rgb(101, 101, 101);
+}
+
+@media (max-width: 900px) {
+  .main h1 {
+    max-width: 100%;
+    font-size: 10vw;
+  }
+
+  .double {
+    flex-direction: column;
+    height: auto;
+    gap: 2rem;
+  }
+
+  .double .image-container,
+  .double[data-reversed="false"] .image-container:first-child,
+  .double[data-reversed="false"] .image-container:last-child,
+  .double[data-reversed="true"] .image-container:first-child,
+  .double[data-reversed="true"] .image-container:last-child {
+    width: 100%;
+  }
+}

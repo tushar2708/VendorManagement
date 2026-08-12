@@ -102,10 +102,14 @@ enum DocumentStatus {
 }
 
 enum ApprovalStage {
-  FINANCE
+  FINANCIAL_CRIME
+  COMPLIANCE
   LEGAL
-  IT_SECURITY
-  QUALITY
+  IT_INFOSEC
+  TAX
+  PROCUREMENT
+  DATA_PRIVACY
+  BUSINESS_OWNER
 }
 
 enum ApprovalStatus {
@@ -294,6 +298,8 @@ model VendorRequest {
   candidates            RequestCandidate[]
   invitations           VendorInvitation[]
   activityLogs          ActivityLog[]
+  approvals             Approval[]
+  scoringCriteria       ScoringCriterion[]
 
   @@index([createdById])
   @@index([status])
@@ -312,6 +318,10 @@ model RequestCandidate {
   city            String?
   state           String?
   inviteStatus    InviteStatus     @default(PENDING)
+  score            Int?
+  scoreBreakdown   Json?
+  commercials      Json?
+  isAwarded        Boolean  @default(false)
   createdAt       DateTime         @default(now())
   updatedAt       DateTime         @updatedAt
 
@@ -416,8 +426,10 @@ model Approval {
   vendor          Vendor         @relation(fields: [vendorId], references: [id])
   assignedToId    String?
   assignedTo      User?          @relation("Approver", fields: [assignedToId], references: [id])
+  requestId       String?
+  request         VendorRequest? @relation(fields: [requestId], references: [id])
 
-  @@unique([vendorId, stage])
+  @@unique([vendorId, stage, requestId])
   @@index([vendorId])
   @@index([assignedToId])
   @@index([status])
@@ -491,4 +503,19 @@ model ActivityLog {
   @@index([requestId])
   @@index([vendorId])
   @@index([createdAt])
+}
+
+model ScoringCriterion {
+  id              String        @id @default(cuid())
+  name            String
+  weight          Int           @default(0)
+  sortOrder       Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  requirementId   String
+  requirement     VendorRequest @relation(fields: [requirementId], references: [id], onDelete: Cascade)
+
+  @@unique([requirementId, name])
+  @@index([requirementId])
 }

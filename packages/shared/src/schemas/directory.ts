@@ -30,3 +30,30 @@ export const directoryQuerySchema = z.object({
   requirementId: z.string().optional(),
 });
 export type DirectoryQuery = z.infer<typeof directoryQuerySchema>;
+
+export const directoryFiltersResponseSchema = z.object({
+  processes: z.array(z.string()),
+  states: z.array(z.string()),
+});
+export type DirectoryFiltersResponse = z.infer<typeof directoryFiltersResponseSchema>;
+
+export const vendorDetailResponseSchema = z.object({
+  vendor: directoryVendorSchema.extend({
+    udyamNumber: z.string().nullable(),
+    vendorCode: z.string().nullable(),
+    category: z.string().nullable(),
+    vendorType: z.string().nullable(),
+    prequalScore: z.number().nullable(),
+    isVerified: z.boolean(),
+    createdAt: z.string(),
+  }),
+  verificationChecks: z.array(z.object({
+    id: z.string(),
+    type: z.string(),
+    status: z.string(),
+    matchScore: z.number().nullable(),
+    notes: z.string().nullable(),
+    verifiedAt: z.string().nullable(),
+  })),
+});
+export type VendorDetailResponse = z.infer<typeof vendorDetailResponseSchema>;
