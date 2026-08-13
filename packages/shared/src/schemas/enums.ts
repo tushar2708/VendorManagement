@@ -18,10 +18,13 @@ export type CandidateSource = z.infer<typeof candidateSourceSchema>;
 export const inviteStatusSchema = z.enum(["PENDING", "INVITED", "OPENED", "REGISTERED", "EXPIRED"]);
 export type InviteStatus = z.infer<typeof inviteStatusSchema>;
 
-export const approvalStageSchema = z.enum([
+export const controlFunctions = [
   "FINANCIAL_CRIME", "COMPLIANCE", "LEGAL", "IT_INFOSEC",
   "TAX", "PROCUREMENT", "DATA_PRIVACY", "BUSINESS_OWNER",
-]);
+] as const;
+export type ControlFunctionStage = typeof controlFunctions[number];
+
+export const approvalStageSchema = z.enum(controlFunctions);
 export type ApprovalStage = z.infer<typeof approvalStageSchema>;
 
 export const slaRiskSchema = z.enum(["ON_TRACK", "AT_RISK", "OVERDUE"]);
@@ -67,7 +70,10 @@ export type ContractState = z.infer<typeof contractStateSchema>;
 export const contractVersionKindSchema = z.enum(["DRAFT", "REVISED", "VENDOR_SIGNED", "BUYER_SIGNED"]);
 export type ContractVersionKind = z.infer<typeof contractVersionKindSchema>;
 
-export const reviewTaskStatusSchema = z.enum(["PENDING", "APPROVED", "CHANGES_REQUESTED"]);
+export const reviewTaskStatusSchema = z.enum([
+  "PENDING", "IN_PROGRESS", "INFORMATION_REQUIRED",
+  "APPROVED", "EDD_COMPLETE", "CHANGES_REQUESTED",
+]);
 export type ReviewTaskStatus = z.infer<typeof reviewTaskStatusSchema>;
 
 export const approvalDecisionTypeSchema = z.enum(["APPROVED", "CHANGES_REQUESTED"]);
@@ -86,6 +92,9 @@ export type VerificationCheckType = z.infer<typeof verificationCheckTypeSchema>;
 
 export const documentStatusSchema = z.enum(["PENDING", "ACCEPTED", "REJECTED"]);
 export type DocumentStatus = z.infer<typeof documentStatusSchema>;
+
+export const documentCategorySchema = z.enum(["BANK_DETAILS", "STATUTORY", "CAPABILITY", "LEGAL"]);
+export type DocumentCategory = z.infer<typeof documentCategorySchema>;
 
 export const badgeStateSchema = z.enum(["VERIFIED", "LISTED", "STALE"]);
 export type BadgeState = z.infer<typeof badgeStateSchema>;

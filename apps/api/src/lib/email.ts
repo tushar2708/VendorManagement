@@ -1,5 +1,6 @@
 import { Resend } from 'resend';
 import { env } from '../config/env.js';
+import { logger } from './logger.js';
 
 interface InviteEmailParams {
   to: string;
@@ -98,12 +99,16 @@ export async function sendNotifyEmail(params: NotifyEmailParams): Promise<boolea
   }
   try {
     const resend = new Resend(env.RESEND_API_KEY);
-    await resend.emails.send({
+    const { error } = await resend.emails.send({
       from: env.RESEND_FROM,
       to: params.to,
       subject: params.subject,
       html: params.html,
     });
+    if (error) {
+      logger.warn({ error }, 'Notification email failed');
+      return false;
+    }
     return true;
   } catch (err) {
     console.error('Failed to send notification email:', err);

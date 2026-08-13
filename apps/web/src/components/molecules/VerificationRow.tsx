@@ -5,15 +5,16 @@ import { cn } from '../ui.js';
 interface VerificationRowProps {
   readonly type: string;
   readonly description: string;
-  readonly status: 'PASS' | 'PARTIAL_MATCH' | 'FAIL' | 'PENDING' | 'IN_PROGRESS';
+  readonly status: string;
 }
 
 const STATUS_MAP: Record<string, { label: string; variant: 'success' | 'warning' | 'danger' | 'neutral'; icon: 'check-circle' | 'alert-triangle' | 'x-circle' | 'clock' }> = {
-  PASS: { label: 'Pass', variant: 'success', icon: 'check-circle' },
-  PARTIAL_MATCH: { label: 'Partial match', variant: 'warning', icon: 'alert-triangle' },
-  FAIL: { label: 'Fail', variant: 'danger', icon: 'x-circle' },
-  PENDING: { label: 'Pending', variant: 'neutral', icon: 'clock' },
-  IN_PROGRESS: { label: 'In progress', variant: 'neutral', icon: 'clock' },
+  RUNNING: { label: 'Running', variant: 'neutral', icon: 'clock' },
+  PASSED: { label: 'Passed', variant: 'success', icon: 'check-circle' },
+  FAILED: { label: 'Failed', variant: 'danger', icon: 'x-circle' },
+  NEEDS_REVIEW: { label: 'Needs review', variant: 'warning', icon: 'alert-triangle' },
+  ACCEPTED: { label: 'Accepted', variant: 'success', icon: 'check-circle' },
+  REJECTED: { label: 'Rejected', variant: 'danger', icon: 'x-circle' },
 };
 
 export function VerificationRow({ type, description, status }: VerificationRowProps): React.ReactElement {

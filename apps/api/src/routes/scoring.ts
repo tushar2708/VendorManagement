@@ -2,6 +2,7 @@ import { Router } from "express";
 import { prisma } from "@vendor-management/db";
 import { requireAuth } from "../middleware/require-auth.js";
 import { validateBody } from "../middleware/validate.js";
+import { scoreCandidates, landedCostOf } from "@vendor-management/shared";
 import { z } from "zod";
 
 export const scoringRouter = Router();
@@ -38,14 +39,50 @@ scoringRouter.get('/:id/scoring', async (req, res) => {
     });
   }
 
+  const candidatesWithQuotations = await Promise.all(
+    requirement.candidates.map(async (c) => {
+      const quotations = await prisma.quotation.findMany({
+        where: { vendorId: c.id, requestId: id },
+      });
+      return { ...c, quotations };
+    })
+  );
+
+  const scoringInputs = candidatesWithQuotations.map((c) => {
+    const q = c.quotations[0];
+    return {
+      vendorId: c.vendorId,
+      prequalScore: c.link?.prequalScore ?? null,
+      landedCost: q ? landedCostOf(q) : null,
+      leadTimeDays: q?.leadTimeDays ?? null,
+      checksRun: 0,
+      checksPassed: 0,
+    };
+  });
+
+  const scoresByVendor = scoreCandidates(scoringInputs);
+
   res.json({
     criteria: criteria.map((c) => ({ id: c.id, name: c.name, weight: c.weight })),
-    candidates: requirement.candidates.map((c) => ({
-      id: c.id, legalName: c.legalName, contactEmail: c.contactEmail,
-      pan: c.pan, city: c.city, state: c.state,
-      linkState: c.link?.state ?? null,
-      prequalScore: c.link?.prequalScore ?? null,
-    })),
+    candidates: requirement.candidates.map((c) => {
+      const quotations = candidatesWithQuotations.find((cq) => cq.id === c.id)?.quotations ?? [];
+      const scores = scoresByVendor[c.vendorId] ?? null;
+      return {
+        id: c.id, legalName: c.legalName, contactEmail: c.contactEmail,
+        pan: c.pan, city: c.city, state: c.state,
+        linkState: c.link?.state ?? null,
+        prequalScore: c.link?.prequalScore ?? null,
+        quotation: quotations[0] ? {
+          id: quotations[0].id,
+          unitPrice: quotations[0].unitPrice,
+          toolingPerUnit: quotations[0].toolingPerUnit,
+          freightPerUnit: quotations[0].freightPerUnit,
+          landedCost: landedCostOf(quotations[0]),
+          leadTimeDays: quotations[0].leadTimeDays,
+        } : null,
+        scores,
+      };
+    }),
   });
 });
 

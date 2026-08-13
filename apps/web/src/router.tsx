@@ -13,12 +13,17 @@ import { SlaSettingsPage } from './routes/buyer/sla-settings.js';
 import { ScoreAwardPage } from './routes/buyer/score-award.js';
 import { ActivityPage } from "./routes/buyer/activity.js";
 import { TeamPage } from "./routes/buyer/team.js";
+import { PrequalReviewPage } from './routes/buyer/prequal-review.js';
+import { VendorControlsPage } from './routes/buyer/vendor-controls.js';
+import { BuyerContractsPage } from './routes/buyer/contracts-page.js';
 import { VendorDashboard } from './routes/vendor/dashboard.js';
 import { PrequalPage } from './routes/vendor/prequal.js';
 import { VendorCompletePage } from './routes/vendor/complete.js';
 import { FullPackPage } from './routes/vendor/full-pack.js';
 import { VendorContractPage } from './routes/vendor/contract.js';
 import { VendorProfilePage } from './routes/vendor/profile.js';
+import StatusTrackerPage from './routes/vendor/status.js';
+import MobilePage from './routes/vendor/mobile.js';
 import { AuthLayout } from './components/layout/auth-layout.js';
 import { BuyerLayout } from './components/layout/buyer-layout.js';
 import { VendorLayout } from './components/layout/vendor-layout.js';
@@ -50,6 +55,9 @@ export const router = createBrowserRouter([
       { path: '/requests/:id/award', element: <ScoreAwardPage /> },
       { path: "activity", element: <ActivityPage /> },
       { path: "team", element: <TeamPage /> },
+      { path: "requests/:id/prequal/:vendorId", element: <PrequalReviewPage /> },
+      { path: "requests/:id/controls/:vendorId", element: <VendorControlsPage /> },
+      { path: "requests/:id/vendors/:vendorId/contracts", element: <BuyerContractsPage /> },
     ],
   },
   {
@@ -65,6 +73,8 @@ export const router = createBrowserRouter([
       { path: '/vendor/full-pack', element: <FullPackPage /> },
       { path: '/vendor/contract', element: <VendorContractPage /> },
       { path: '/vendor/profile', element: <VendorProfilePage /> },
+      { path: "vendor/status", element: <StatusTrackerPage /> },
+      { path: "vendor/mobile", element: <MobilePage /> },
     ],
   },
   { path: '/invite/:token', element: <InviteLandingPage /> },

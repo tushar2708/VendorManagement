@@ -14,3 +14,5 @@ export function Shimmer({ width, height, className }: ShimmerProps): React.React
     />
   );
 }
+
+export { Skeleton } from "../ui/skeleton.js";

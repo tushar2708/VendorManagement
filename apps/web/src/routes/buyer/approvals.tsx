@@ -98,10 +98,12 @@ export function ApproverQueuePage(): React.ReactElement {
                     <Button size="sm" variant="secondary" onClick={() => setDrawerLinkId(a.linkId)}>View</Button>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <div className="flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'CHANGES_REQUESTED')}>Request Changes</Button>
-                      <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
-                    </div>
+                    {canMakeDecisions ? (
+                      <div className="flex items-center gap-2 justify-end">
+                        <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'CHANGES_REQUESTED')}>Request Changes</Button>
+                        <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
+                      </div>
+                    ) : null}
                   </td>
                 </tr>
               ))}

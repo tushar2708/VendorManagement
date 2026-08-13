@@ -139,7 +139,10 @@ enum ContractVersionKind {
 
 enum ReviewTaskStatus {
   PENDING
+  IN_PROGRESS
+  INFORMATION_REQUIRED
   APPROVED
+  EDD_COMPLETE
   CHANGES_REQUESTED
 }
 
@@ -196,6 +199,10 @@ model User {
   buyerOrgId    String?
   vendorOrgId   String?
   buyerRole     BuyerRole?
+  mobileNumber        String?
+  mobileVerifiedAt    DateTime?
+  mobileOtp           String?
+  mobileOtpExpiresAt  DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
   sessions      Session[]
@@ -207,6 +214,7 @@ model User {
   reviewTasks         ReviewTask[]       @relation("ReviewTaskAssignee")
   approvalDecisions   ApprovalDecision[] @relation("DecisionMaker")
   vendorLinks         VendorBuyerLink[]  @relation("LinkUsers")
+  capturedQuotations  Quotation[]        @relation("QuotationCapturer")
 
   @@index([buyerOrgId])
   @@index([vendorOrgId])
@@ -300,6 +308,7 @@ model DirectoryVendor {
   updatedAt       DateTime @updatedAt
 
   candidates        RequestCandidate[]
+  quotations        Quotation[]
 
   @@index([contactEmail])
   @@index([primaryGstin])
@@ -330,6 +339,7 @@ model VendorRequest {
   invitations           VendorInvitation[]
   links                 VendorBuyerLink[]
   scoringCriteria       ScoringCriterion[]
+  quotations            Quotation[]
 
   @@index([createdById])
   @@index([stage])
@@ -659,4 +669,28 @@ model ScoringCriterion {
 
   @@unique([requirementId, name])
   @@index([requirementId])
+}
+
+model Quotation {
+  id              String        @id @default(cuid())
+  unitPrice       Int
+  toolingPerUnit  Int           @default(0)
+  freightPerUnit  Int           @default(0)
+  leadTimeDays    Int
+  location        String?
+  capacityNote    String?
+  notes           String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  requestId       String
+  vendorId        String
+  capturedById    String?
+
+  request         VendorRequest @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  vendor          DirectoryVendor @relation(fields: [vendorId], references: [id])
+  capturedBy      User?         @relation("QuotationCapturer", fields: [capturedById], references: [id], onDelete: SetNull)
+
+  @@unique([requestId, vendorId])
+  @@index([requestId])
+  @@index([vendorId])
 }

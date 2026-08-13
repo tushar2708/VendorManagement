@@ -37,3 +37,75 @@ vendorRouter.get("/profile", async (req, res) => {
 
   res.json({ user, links });
 });
+
+vendorRouter.get("/prequal", async (req, res) => {
+  const linkId = req.query.linkId as string | undefined;
+  if (!linkId) {
+    res.status(400).json({ error: "linkId is required" });
+    return;
+  }
+
+  const link = await prisma.vendorBuyerLink.findUnique({
+    where: { id: linkId },
+    select: { vendorUserId: true },
+  });
+
+  if (!link || link.vendorUserId !== req.user!.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  const checks = await prisma.verificationCheck.findMany({
+    where: { linkId },
+    select: {
+      id: true,
+      checkType: true,
+      status: true,
+      ranAt: true,
+      subjectValue: true,
+    },
+  });
+
+  res.json({ checks });
+});
+
+vendorRouter.get("/complete", async (req, res) => {
+  const linkId = req.query.linkId as string | undefined;
+  if (!linkId) {
+    res.status(400).json({ error: "linkId is required" });
+    return;
+  }
+
+  const link = await prisma.vendorBuyerLink.findUnique({
+    where: { id: linkId },
+    include: {
+      candidate: { include: { vendor: { select: { badgeState: true } } } },
+    },
+  });
+
+  if (!link || link.vendorUserId !== req.user!.userId) {
+    res.status(403).json({ error: "Forbidden" });
+    return;
+  }
+
+  if (link.state !== 'ONBOARDED') {
+    res.status(409).json({ error: "Link is not in ONBOARDED state" });
+    return;
+  }
+
+  const contractCount = await prisma.contract.count({
+    where: { linkId },
+  });
+
+  const totalDays = link.onboardedAt && link.createdAt
+    ? Math.floor((link.onboardedAt.getTime() - link.createdAt.getTime()) / 86_400_000)
+    : null;
+
+  res.json({
+    erpVendorCode: link.erpVendorCode,
+    onboardedAt: link.onboardedAt?.toISOString() ?? null,
+    totalDays,
+    contractCount,
+    directoryBadgeState: link.candidate.vendor?.badgeState ?? null,
+  });
+});

@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { updateApprovalSchema } from '@vendor-management/shared';
+import { updateApprovalSchema, slaRiskFor } from '@vendor-management/shared';
 import { prisma } from '@vendor-management/db';
 import { requireAuth } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';
@@ -34,8 +34,7 @@ approvalsRouter.get('/', async (req, res) => {
   const items = tasks.map((t) => {
     const ageDays = Math.floor((now - t.createdAt.getTime()) / 86_400_000);
     const slaDays = slaMap.get(t.stage) ?? 5;
-    const slaRisk =
-      ageDays > slaDays ? 'OVERDUE' : ageDays > slaDays * 0.7 ? 'AT_RISK' : 'ON_TRACK';
+    const slaRisk = slaRiskFor(t.createdAt, slaDays);
     return {
       id: t.id,
       stage: t.stage,
@@ -69,10 +68,10 @@ approvalsRouter.get('/analytics', async (req, res) => {
   let atRisk = 0;
   let overdue = 0;
   for (const t of tasks) {
-    const ageDays = Math.floor((now - t.createdAt.getTime()) / 86_400_000);
     const slaDays = slaMap.get(t.stage) ?? 5;
-    if (ageDays > slaDays) overdue++;
-    else if (ageDays > slaDays * 0.7) atRisk++;
+    const slaRisk = slaRiskFor(t.createdAt, slaDays);
+    if (slaRisk === 'OVERDUE') overdue++;
+    else if (slaRisk === 'AT_RISK') atRisk++;
     else onTrack++;
   }
 
@@ -98,7 +97,7 @@ approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (r
     res.status(403).json({ error: 'Forbidden' });
     return;
   }
-  if (task.status !== 'PENDING') {
+  if (!['PENDING', 'IN_PROGRESS', 'INFORMATION_REQUIRED'].includes(task.status)) {
     res.status(409).json({ error: 'Already decided' });
     return;
   }

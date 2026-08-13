@@ -89,13 +89,10 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
       data: { role: 'VENDOR', tier: 'EXECUTIVE', vendorOrgId: vendorOrg.id },
     });
 
-    const candidate = await prisma.requestCandidate.findFirst({
-      where: { requestId: invitation.requestId, vendorId: (invitation as any).vendorId },
-    });
     let link = null;
-    if (candidate) {
+    if (invitation.candidateId) {
       link = await prisma.vendorBuyerLink.findUnique({
-        where: { candidateId: candidate.id },
+        where: { candidateId: invitation.candidateId },
       });
     }
 
