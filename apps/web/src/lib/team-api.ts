@@ -10,6 +10,10 @@ export async function createTeamMember(input: CreateTeamMemberInput): Promise<vo
   await http.post('/api/team', input);
 }
 
+export async function updateTeamMember(id: string, data: { fullName?: string; role?: string }): Promise<void> {
+  await http.patch(`/api/team/${id}`, data);
+}
+
 export async function removeTeamMember(id: string): Promise<void> {
   await http.delete(`/api/team/${id}`);
 }

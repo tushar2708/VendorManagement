@@ -84,7 +84,8 @@ approvalsRouter.get('/analytics', async (req, res) => {
   });
 });
 
-approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (req, res) => {
+approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (req, res, next) => {
+  try {
   const task = await prisma.reviewTask.findUnique({
     where: { id: String(req.params.id) },
     include: { link: { select: { id: true, buyerOrgId: true, vendorUserId: true } } },
@@ -134,17 +135,28 @@ approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (r
           decidedById: req.user!.userId,
         },
       });
-      await tx.submission.updateMany({
-        where: { linkId: task.linkId, stage: 'FULL' },
-        data: { status: 'IN_PROGRESS' },
+
+      const currentLink = await tx.vendorBuyerLink.findUnique({
+        where: { id: task.linkId },
+        select: { state: true },
       });
-      await transition(task.linkId, 'FULL_IN_PROGRESS', {
-        actorType: 'BUYER',
-        actorId: req.user!.userId,
-        note: 'Changes requested by approver',
-      }, tx as any);
+
+      if (currentLink && currentLink.state === 'CONTRACTS_IN_PROGRESS') {
+        await tx.submission.updateMany({
+          where: { linkId: task.linkId, stage: 'FULL' },
+          data: { status: 'IN_PROGRESS' },
+        });
+        await transition(task.linkId, 'FULL_IN_PROGRESS', {
+          actorType: 'BUYER',
+          actorId: req.user!.userId,
+          note: 'Changes requested by approver',
+        }, tx as any);
+      }
     });
   }
 
   res.json({ ok: true });
+  } catch (error) {
+    next(error);
+  }
 });

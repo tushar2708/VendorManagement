@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "@vendor-management/db";
 import { requireAuth, requireRole } from "../middleware/require-auth.js";
 import { validateBody } from "../middleware/validate.js";
-import { createTeamMemberSchema } from "@vendor-management/shared";
+import { createTeamMemberSchema, updateTeamMemberSchema } from "@vendor-management/shared";
 import { auth } from "./auth.js";
 
 export const teamRouter = Router();
@@ -44,6 +44,27 @@ teamRouter.post("/", validateBody(createTeamMemberSchema), async (req, res) => {
   } catch (e: any) {
     res.status(400).json({ error: e.message ?? "Failed to create team member" });
   }
+});
+
+teamRouter.patch("/:id", validateBody(updateTeamMemberSchema), async (req, res) => {
+  if (req.user!.buyerRole !== "OWNER") { res.status(403).json({ error: "Only OWNER can edit team members" }); return; }
+
+  const targetId = String(req.params.id);
+  const target = await prisma.user.findUnique({ where: { id: targetId } });
+  if (!target || target.buyerOrgId !== req.user!.buyerOrgId) {
+    res.status(404).json({ error: "User not found" }); return;
+  }
+
+  const updateData: Record<string, unknown> = {};
+  if (req.body.fullName) updateData.name = req.body.fullName;
+  if (req.body.role) updateData.buyerRole = req.body.role;
+
+  await prisma.user.update({
+    where: { id: targetId },
+    data: updateData,
+  });
+
+  res.json({ ok: true });
 });
 
 teamRouter.delete("/:id", async (req, res) => {

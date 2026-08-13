@@ -357,6 +357,7 @@ model RequestCandidate {
   buyerOrgId      String
   buyerOrg        BuyerOrg         @relation("CandidateBuyerOrg", fields: [buyerOrgId], references: [id])
   link            VendorBuyerLink?
+  invitation      VendorInvitation?
 
   @@unique([requestId, vendorId])
   @@index([requestId])
@@ -383,6 +384,8 @@ model VendorInvitation {
   request         VendorRequest @relation(fields: [requestId], references: [id])
   buyerOrgId      String
   buyerOrg        BuyerOrg      @relation(fields: [buyerOrgId], references: [id])
+  candidateId     String?       @unique
+  candidate       RequestCandidate? @relation(fields: [candidateId], references: [id])
 
   @@index([token])
   @@index([tokenHash])
