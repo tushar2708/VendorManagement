@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { TeamMember } from "@vendor-management/shared";
-import { listTeam, createTeamMember, removeTeamMember } from "../../lib/team-api.js";
+import { listTeam, createTeamMember, removeTeamMember, updateTeamMember } from "../../lib/team-api.js";
 import { errorMessage } from "../../lib/auth-api.js";
 import { Card, Spinner, Button } from "../../components/ui.js";
 import { Badge } from "../../components/atoms/Badge.js";
@@ -19,6 +19,9 @@ export function TeamPage(): React.ReactElement {
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<string>("QUALITY");
   const [password, setPassword] = useState("");
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editRole, setEditRole] = useState<string>("");
   const headingRef = useTextReveal<HTMLHeadingElement>();
   const { toast, showToast, hideToast } = useToast();
   const { user } = useAuth();
@@ -58,6 +61,30 @@ export function TeamPage(): React.ReactElement {
     }
   }
 
+  function startEdit(m: TeamMember) {
+    setEditingId(m.id);
+    setEditName(m.fullName ?? "");
+    setEditRole(m.role);
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditName("");
+    setEditRole("");
+  }
+
+  async function handleSaveEdit() {
+    if (!editingId) return;
+    try {
+      await updateTeamMember(editingId, { fullName: editName, role: editRole });
+      setEditingId(null);
+      load();
+      showToast("Team member updated", "success");
+    } catch (err) {
+      showToast(errorMessage(err, "Failed to update"), "error");
+    }
+  }
+
   return (
     <div>
       <h1 ref={headingRef} className="text-3xl font-bold tracking-tight text-slate-900">Team</h1>
@@ -80,14 +107,47 @@ export function TeamPage(): React.ReactElement {
               <tbody>
                 {members.map((m) => (
                   <tr key={m.id} className="border-b border-slate-100 last:border-0">
-                    <td className="px-4 py-3 font-medium text-slate-900">{m.fullName}</td>
-                    <td className="px-4 py-3 text-slate-600">{m.email}</td>
-                    <td className="px-4 py-3"><Badge variant="info">{m.role}</Badge></td>
-                    <td className="px-4 py-3 text-right">
-                      {!m.isSelf && (
-                        <Button size="sm" variant="secondary" onClick={() => handleRemove(m.id)}>Remove</Button>
-                      )}
-                    </td>
+                    {editingId === m.id ? (
+                      <>
+                        <td className="px-4 py-2">
+                          <input
+                            className="w-full rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                            value={editName}
+                            onChange={(e) => setEditName(e.target.value)}
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-slate-600">{m.email}</td>
+                        <td className="px-4 py-2">
+                          <select
+                            className="rounded-md border border-slate-300 px-2 py-1.5 text-sm"
+                            value={editRole}
+                            onChange={(e) => setEditRole(e.target.value)}
+                          >
+                            {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
+                          </select>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex items-center gap-2 justify-end">
+                            <Button size="sm" variant="secondary" onClick={cancelEdit}>Cancel</Button>
+                            <Button size="sm" onClick={handleSaveEdit}>Save</Button>
+                          </div>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td className="px-4 py-3 font-medium text-slate-900">{m.fullName}</td>
+                        <td className="px-4 py-3 text-slate-600">{m.email}</td>
+                        <td className="px-4 py-3"><Badge variant="info">{m.role}</Badge></td>
+                        <td className="px-4 py-3 text-right">
+                          {!m.isSelf && (
+                            <div className="flex items-center gap-2 justify-end">
+                              <Button size="sm" variant="secondary" onClick={() => startEdit(m)}>Edit</Button>
+                              <Button size="sm" variant="secondary" onClick={() => handleRemove(m.id)}>Remove</Button>
+                            </div>
+                          )}
+                        </td>
+                      </>
+                    )}
                   </tr>
                 ))}
               </tbody>

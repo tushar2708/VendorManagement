@@ -131,8 +131,21 @@ requirementsRouter.get('/stats', async (req, res, next) => {
 
     const openLongestDays = Math.floor(openLongestMs / (1000 * 60 * 60 * 24));
 
+    const waitingOnYou = await prisma.vendorBuyerLink.count({
+      where: {
+        buyerOrgId,
+        state: {
+          in: [
+            'PREQUAL_SUBMITTED', 'PREQUAL_UNDER_REVIEW', 'PREQUAL_CLEARED',
+            'FULL_SUBMITTED', 'FULL_UNDER_REVIEW', 'CONTRACTS_IN_PROGRESS', 'APPROVED',
+          ],
+        },
+      },
+    });
+
     res.json({
       active,
+      waitingOnYou,
       completed,
       vendorsOnboarded,
       openLongestDays,
@@ -148,7 +161,7 @@ requirementsRouter.get('/analytics', async (req, res, next) => {
 
     const requests = await prisma.vendorRequest.findMany({
       where: { buyerOrgId },
-      select: { id: true, stage: true, createdAt: true, updatedAt: true, title: true, category: true },
+      select: { id: true, stage: true, vendorType: true, createdAt: true, updatedAt: true, title: true, category: true },
     });
 
     const stageMap: Record<string, string> = {
@@ -178,11 +191,36 @@ requirementsRouter.get('/analytics', async (req, res, next) => {
         )
       : 0;
 
+    const vendorTypes: Record<string, number> = {};
+    for (const r of requests) {
+      const vt = (r as any).vendorType ?? 'PRODUCTION_PART';
+      vendorTypes[vt] = (vendorTypes[vt] ?? 0) + 1;
+    }
+
+    const directoryCount = await prisma.directoryVendor.count();
+    const passRate = requests.length > 0
+      ? Math.round((completed.length / requests.length) * 100)
+      : 0;
+
+    const recentCompletions = completed
+      .sort((a, b) => b.updatedAt.getTime() - a.updatedAt.getTime())
+      .slice(0, 5)
+      .map((r) => ({
+        title: r.title ?? '',
+        vendorName: '',
+        days: Math.floor((r.updatedAt.getTime() - r.createdAt.getTime()) / 86400000),
+        completedAt: r.updatedAt.toISOString(),
+      }));
+
     res.json({
       totalRequests: requests.length,
       completedCount: completed.length,
       avgDaysToOnboard,
+      passRate,
+      directoryCount,
       funnel,
+      vendorTypes,
+      recentCompletions,
     });
   } catch (error) {
     next(error);

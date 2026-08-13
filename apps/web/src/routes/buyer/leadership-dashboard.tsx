@@ -92,12 +92,12 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
                   : '—'
               }
             />
-            <StatCard label="Pass rate" value={`${state.req.passRate}%`} />
+            <StatCard label="Pass rate" value={`${state.req.passRate ?? 0}%`} />
             <StatCard
               label="SLA compliance"
               value={`${state.appr.slaComplianceRate}%`}
             />
-            <StatCard label="Vendors in directory" value={state.req.directoryCount} />
+            <StatCard label="Vendors in directory" value={state.req.directoryCount ?? 0} />
           </div>
 
           {/* Charts row 1 */}
@@ -112,32 +112,17 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
                 steps={[
                   {
                     name: 'Intake & invite',
-                    value: state.req.funnel['Intake & invite'] ?? 0,
+                    value: state.req.funnel?.['Intake & invite'] ?? 0,
                     color: '#6366f1',
                   },
                   {
-                    name: 'Verification',
-                    value: state.req.funnel['Verification'] ?? 0,
+                    name: 'In progress',
+                    value: state.req.funnel?.['In progress'] ?? 0,
                     color: '#f59e0b',
                   },
                   {
-                    name: 'Award & full pack',
-                    value: state.req.funnel['Award & full pack'] ?? 0,
-                    color: '#10b981',
-                  },
-                  {
-                    name: 'Governance',
-                    value: state.req.funnel['Governance'] ?? 0,
-                    color: '#8b5cf6',
-                  },
-                  {
-                    name: 'Contract',
-                    value: state.req.funnel['Contract'] ?? 0,
-                    color: '#0ea5e9',
-                  },
-                  {
-                    name: 'Activated',
-                    value: state.req.funnel['Activated'] ?? 0,
+                    name: 'Closed',
+                    value: state.req.funnel?.['Closed'] ?? 0,
                     color: '#059669',
                   },
                 ]}
@@ -184,11 +169,11 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
                 data={[
                   {
                     name: 'Production part',
-                    value: state.req.vendorTypes.PRODUCTION_PART ?? 0,
+                    value: state.req.vendorTypes?.PRODUCTION_PART ?? 0,
                   },
                   {
                     name: 'Indirect / services',
-                    value: state.req.vendorTypes.INDIRECT_SERVICES ?? 0,
+                    value: state.req.vendorTypes?.INDIRECT_SERVICES ?? 0,
                   },
                 ]}
               />
@@ -199,7 +184,7 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
               <p className="mt-1 text-sm text-slate-500">
                 Last 5 completed onboardings
               </p>
-              {state.req.recentCompletions.length === 0 ? (
+              {(state.req.recentCompletions ?? []).length === 0 ? (
                 <p className="mt-4 text-sm text-slate-400">
                   No completions yet.
                 </p>
@@ -214,7 +199,7 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
                     </tr>
                   </thead>
                   <tbody>
-                    {state.req.recentCompletions.map((c, i) => (
+                    {(state.req.recentCompletions ?? []).map((c, i) => (
                       <tr
                         key={i}
                         className="border-b border-slate-100 last:border-0"

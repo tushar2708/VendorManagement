@@ -5,6 +5,7 @@ import { registerViaInviteSchema } from '@vendor-management/shared';
 import { prisma } from '@vendor-management/db';
 import { auth } from './auth.js';
 import { validateBody } from '../middleware/validate.js';
+import { requireAuth } from '../middleware/require-auth.js';
 import { transition } from '../lib/link-state.js';
 import { ensureSubmission } from '../lib/link-dto.js';
 
@@ -39,11 +40,20 @@ inviteRouter.get('/:token', async (req, res) => {
 
   const existingUser = await prisma.user.findUnique({ where: { email: invitation.email ?? '' } });
 
+  let needsPassword = false;
+  if (existingUser) {
+    const account = await prisma.account.findFirst({
+      where: { userId: existingUser.id, providerId: 'credential' },
+    });
+    needsPassword = !account?.password;
+  }
+
   res.json({
     vendorName: invitation.email ?? '',
     email: invitation.email,
     requirementTitle: invitation.request.title,
     alreadyRegistered: !!existingUser,
+    needsPassword,
   });
 });
 
@@ -164,4 +174,51 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
     }
     res.status(400).json({ error: e?.message ?? 'Registration failed' });
   }
+});
+
+inviteRouter.post('/set-password', requireAuth, async (req, res) => {
+  if (!req.user || req.user.role !== 'VENDOR') {
+    res.status(403).json({ error: 'Only vendors can set a password' });
+    return;
+  }
+
+  const { password } = req.body;
+  if (!password || typeof password !== 'string' || password.length < 8) {
+    res.status(400).json({ error: 'Password must be at least 8 characters' });
+    return;
+  }
+
+  const account = await prisma.account.findFirst({
+    where: { userId: req.user.userId, providerId: 'credential' },
+  });
+
+  if (account?.password) {
+    res.status(409).json({ error: 'Password already set' });
+    return;
+  }
+
+  // @ts-ignore -- bcrypt has no declaration file in devDeps
+  const bcrypt = await import('bcrypt');
+  const hash = (bcrypt.default?.hash ?? bcrypt.hash) as (data: string, rounds: number) => Promise<string>;
+  const passwordHash = await hash(password, 12);
+
+  if (account) {
+    await prisma.account.update({
+      where: { id: account.id },
+      data: { password: passwordHash },
+    });
+  } else {
+    const id = crypto.randomUUID();
+    await prisma.account.create({
+      data: {
+        id,
+        userId: req.user.userId,
+        accountId: req.user.userId,
+        providerId: 'credential',
+        password: passwordHash,
+      },
+    });
+  }
+
+  res.json({ ok: true });
 });

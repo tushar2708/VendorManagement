@@ -12,6 +12,12 @@ export const createTeamMemberSchema = z.object({
 });
 export type CreateTeamMemberInput = z.infer<typeof createTeamMemberSchema>;
 
+export const updateTeamMemberSchema = z.object({
+  fullName: z.string().min(1).optional(),
+  role: buyerRoleSchema.optional(),
+});
+export type UpdateTeamMemberInput = z.infer<typeof updateTeamMemberSchema>;
+
 export const teamMemberSchema = z.object({
   id: z.string(),
   email: z.string(),

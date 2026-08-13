@@ -18,6 +18,7 @@ import { resolveErpIfDue, markErpSyncToFail } from '../lib/erp.js';
 import { loadBuyerLinkDetail, mergedFields } from '../lib/buyer-link-dto.js';
 import { buildActivityFeed } from '../lib/activity.js';
 import { listWarmCandidates } from '../lib/directory-sync.js';
+import { sendNotifyEmail } from '../lib/email.js';
 
 export const buyerRouter = Router();
 buyerRouter.use(requireAuth);
@@ -291,7 +292,16 @@ buyerRouter.post('/links/:id/award', requireOwnLink('id'), async (req, res, next
 
     const link = await prisma.vendorBuyerLink.findUnique({
       where: { id: linkId },
-      select: { id: true, requestId: true },
+      select: {
+        id: true,
+        requestId: true,
+        candidate: {
+          select: { contactEmail: true },
+        },
+        requirement: {
+          select: { title: true },
+        },
+      },
     });
 
     if (!link) {
@@ -381,6 +391,12 @@ buyerRouter.post('/links/:id/award', requireOwnLink('id'), async (req, res, next
       }
 
       await listWarmCandidates(tx, link.requestId);
+    });
+
+    void sendNotifyEmail({
+      to: link.candidate.contactEmail ?? '',
+      subject: `You've been awarded: ${link.requirement.title}`,
+      html: `<p>Congratulations! Your submission for <strong>${link.requirement.title}</strong> has been awarded. Please log in to continue with the full onboarding pack.</p>`,
     });
 
     res.status(200).json({ ok: true });

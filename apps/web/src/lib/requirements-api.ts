@@ -42,7 +42,8 @@ export interface ApprovalItem {
 
 export async function getApprovals(status?: string): Promise<ApprovalItem[]> {
   const response = await http.get('/api/approvals', { params: status ? { status } : {} });
-  return response.data.approvals;
+  const data = response.data;
+  return Array.isArray(data) ? data : data.approvals ?? [];
 }
 
 export async function decideApproval(id: string, decision: { status: string; notes?: string }): Promise<void> {
