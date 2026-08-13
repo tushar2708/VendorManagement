@@ -1,5 +1,0 @@
--- CreateEnum
-CREATE TYPE "UserTier" AS ENUM ('EXECUTIVE', 'LEADERSHIP');
-
--- AlterTable
-ALTER TABLE "User" ADD COLUMN     "tier" "UserTier" NOT NULL DEFAULT 'EXECUTIVE';

@@ -16,13 +16,15 @@ async function main() {
     console.log("Database truncated.");
   }
 
-  const buyerOrg = await prisma.buyerOrg.create({
-    data: { legalName: "Meridian Motors" },
-  });
+  let buyerOrg = await prisma.buyerOrg.findFirst({ where: { legalName: "Meridian Motors" } });
+  if (!buyerOrg) {
+    buyerOrg = await prisma.buyerOrg.create({ data: { legalName: "Meridian Motors" } });
+  }
 
-  const vendorOrg = await prisma.vendorOrg.create({
-    data: { legalName: "Tata Components", contactEmail: "admin@tatacomponents.test" },
-  });
+  let vendorOrg = await prisma.vendorOrg.findFirst({ where: { legalName: "Tata Components" } });
+  if (!vendorOrg) {
+    vendorOrg = await prisma.vendorOrg.create({ data: { legalName: "Tata Components", contactEmail: "admin@tatacomponents.test" } });
+  }
 
   const users = [
     { name: "Priya Sharma", email: "buyer@meridian.test", role: "BUYER" as const, tier: "EXECUTIVE" as const, buyerRole: "OWNER" as const, buyerOrgId: buyerOrg.id },
@@ -35,6 +37,11 @@ async function main() {
 
   const createdUsers: Record<string, string> = {};
   for (const u of users) {
+    const existing = await prisma.user.findUnique({ where: { email: u.email } });
+    if (existing) {
+      createdUsers[u.email] = existing.id;
+      continue;
+    }
     const id = generateId();
     await prisma.user.create({
       data: {
@@ -72,7 +79,10 @@ async function main() {
 
   const createdVendors: Record<string, string> = {};
   for (const v of directoryVendors) {
-    const dv = await prisma.directoryVendor.create({ data: v });
+    let dv = await prisma.directoryVendor.findFirst({ where: { contactEmail: v.contactEmail } });
+    if (!dv) {
+      dv = await prisma.directoryVendor.create({ data: v });
+    }
     createdVendors[v.contactEmail] = dv.id;
   }
 
@@ -88,19 +98,23 @@ async function main() {
 
   let reqNum = 1001;
   for (const r of requirements) {
-    await prisma.vendorRequest.create({
-      data: {
-        requestNumber: `VR-${reqNum++}`,
-        title: r.title,
-        stage: r.stage,
-        category: r.category,
-        process: "RFQ",
-        vendorType: "PRODUCTION_PART",
-        processCategories: [r.category],
-        createdById: ownerId,
-        buyerOrgId: buyerOrg.id,
-      },
-    });
+    const existingReq = await prisma.vendorRequest.findFirst({ where: { title: r.title } });
+    if (!existingReq) {
+      await prisma.vendorRequest.create({
+        data: {
+          requestNumber: `VR-${reqNum}`,
+          title: r.title,
+          stage: r.stage,
+          category: r.category,
+          process: "RFQ",
+          vendorType: "PRODUCTION_PART",
+          processCategories: [r.category],
+          createdById: ownerId,
+          buyerOrgId: buyerOrg.id,
+        },
+      });
+    }
+    reqNum++;
   }
 
   const slaRules = [
@@ -115,7 +129,10 @@ async function main() {
   ];
 
   for (const s of slaRules) {
-    await prisma.slaRule.create({ data: s });
+    const existingRule = await prisma.slaRule.findFirst({ where: { stage: s.stage } });
+    if (!existingRule) {
+      await prisma.slaRule.create({ data: s });
+    }
   }
 
   // ── Candidates for requirements with CANDIDATES_SELECTED or later stages ──
@@ -131,20 +148,22 @@ async function main() {
         { requestId: reqCS.id, vendorId: dvSundaram, source: "DIRECTORY", legalName: "Sundaram Castings", contactEmail: "sales@sundaramcast.test", pan: "AADCS5678B", gstin: "33AADCS5678B1Z5", city: "Chennai", state: "Tamil Nadu", buyerOrgId: buyerOrg.id },
         { requestId: reqCS.id, vendorId: createdVendors["info@precisionauto.test"], source: "MANUAL", legalName: "Precision Auto Components", contactEmail: "info@precisionauto.test", pan: "AAECP9012C", city: "Gurgaon", state: "Haryana", buyerOrgId: buyerOrg.id },
       ],
+      skipDuplicates: true,
     });
   }
 
   // Requirement "Sheet-metal brackets & mounts" (IN_PROGRESS) — 2 candidates with links
   const reqIP = await prisma.vendorRequest.findFirst({ where: { title: "Sheet-metal brackets & mounts" } });
-  if (reqIP) {
+  const existingIPLinks = reqIP ? await prisma.vendorBuyerLink.count({ where: { requestId: reqIP.id } }) : 0;
+  if (reqIP && existingIPLinks === 0) {
     const dvGujarat = createdVendors["orders@gujaratmetal.test"];
     const dvLudhiana = createdVendors["sales@ludhianasteel.test"];
 
     const cand1 = await prisma.requestCandidate.create({
-      data: { requestId: reqIP.id, vendorId: dvGujarat, source: "DIRECTORY", legalName: "Gujarat Metal Works", contactEmail: "orders@gujaratmetal.test", pan: "AAFCG3456D", gstin: "24AAFCG3456D1Z5", city: "Ahmedabad", state: "Gujarat", inviteStatus: "OPENED", buyerOrgId: buyerOrg.id },
+      data: { requestId: reqIP.id, vendorId: dvGujarat, source: "DIRECTORY", legalName: "Gujarat Metal Works", contactEmail: "orders@gujaratmetal.test", pan: "AAFCG3456D", gstin: "24AAFCG3456D1Z5", city: "Ahmedabad", state: "Gujarat", buyerOrgId: buyerOrg.id },
     });
     const cand2 = await prisma.requestCandidate.create({
-      data: { requestId: reqIP.id, vendorId: dvLudhiana, source: "DIRECTORY", legalName: "Ludhiana Steel Fabricators", contactEmail: "sales@ludhianasteel.test", pan: "AAGCL7890E", gstin: "03AAGCL7890E1Z5", city: "Ludhiana", state: "Punjab", inviteStatus: "OPENED", buyerOrgId: buyerOrg.id },
+      data: { requestId: reqIP.id, vendorId: dvLudhiana, source: "DIRECTORY", legalName: "Ludhiana Steel Fabricators", contactEmail: "sales@ludhianasteel.test", pan: "AAGCL7890E", gstin: "03AAGCL7890E1Z5", city: "Ludhiana", state: "Punjab", buyerOrgId: buyerOrg.id },
     });
 
     // Link 1: Gujarat Metal — PREQUAL_CLEARED (cleared prequal, awaiting award)
@@ -176,9 +195,9 @@ async function main() {
     });
     await prisma.verificationCheck.createMany({
       data: [
-        { linkId: link1.id, checkType: "PAN", status: "PASSED", matchScore: 95, ranAt: new Date(), detail: { reason: "Verified" } },
-        { linkId: link1.id, checkType: "GST", status: "PASSED", matchScore: 92, ranAt: new Date(), detail: { reason: "Verified" } },
-        { linkId: link1.id, checkType: "UDYAM", status: "NEEDS_REVIEW", matchScore: 72, ranAt: new Date(), detail: { reason: "Partial match" } },
+        { linkId: link1.id, checkType: "PAN", subjectValue: "AAFCG3456D", status: "PASSED", matchScore: 95, ranAt: new Date(), detail: { reason: "Verified" } },
+        { linkId: link1.id, checkType: "GST", subjectValue: "24AAFCG3456D1Z5", status: "PASSED", matchScore: 92, ranAt: new Date(), detail: { reason: "Verified" } },
+        { linkId: link1.id, checkType: "UDYAM", subjectValue: "", status: "NEEDS_REVIEW", matchScore: 72, ranAt: new Date(), detail: { reason: "Partial match" } },
       ],
     });
 
@@ -232,11 +251,11 @@ async function main() {
     // Verification checks for link2
     await prisma.verificationCheck.createMany({
       data: [
-        { linkId: link2.id, checkType: "PAN", status: "PASSED", matchScore: 98, ranAt: new Date(), detail: { reason: "Verified" } },
-        { linkId: link2.id, checkType: "GST", status: "PASSED", matchScore: 96, ranAt: new Date(), detail: { reason: "Verified" } },
-        { linkId: link2.id, checkType: "UDYAM", status: "PASSED", matchScore: 90, ranAt: new Date(), detail: { reason: "Verified" } },
-        { linkId: link2.id, checkType: "PENNY_DROP", status: "PASSED", matchScore: 100, ranAt: new Date(), detail: { reason: "Verified" } },
-        { linkId: link2.id, checkType: "GST_FILINGS", status: "NEEDS_REVIEW", matchScore: 68, ranAt: new Date(), detail: { reason: "Partial match" } },
+        { linkId: link2.id, checkType: "PAN", subjectValue: "AAGCL7890E", status: "PASSED", matchScore: 98, ranAt: new Date(), detail: { reason: "Verified" } },
+        { linkId: link2.id, checkType: "GST", subjectValue: "03AAGCL7890E1Z5", status: "PASSED", matchScore: 96, ranAt: new Date(), detail: { reason: "Verified" } },
+        { linkId: link2.id, checkType: "UDYAM", subjectValue: "", status: "PASSED", matchScore: 90, ranAt: new Date(), detail: { reason: "Verified" } },
+        { linkId: link2.id, checkType: "PENNY_DROP", subjectValue: "50100123456789", status: "PASSED", matchScore: 100, ranAt: new Date(), detail: { reason: "Verified" } },
+        { linkId: link2.id, checkType: "GST_FILINGS", subjectValue: "03AAGCL7890E1Z5", status: "NEEDS_REVIEW", matchScore: 68, ranAt: new Date(), detail: { reason: "Partial match" } },
       ],
     });
 
@@ -285,10 +304,11 @@ async function main() {
 
   // Requirement "Gravity-cast brake calipers" (CLOSED) — 1 candidate, ONBOARDED
   const reqClosed = await prisma.vendorRequest.findFirst({ where: { title: { startsWith: "Gravity-cast" } } });
-  if (reqClosed) {
+  const existingClosedLinks = reqClosed ? await prisma.vendorBuyerLink.count({ where: { requestId: reqClosed.id } }) : 0;
+  if (reqClosed && existingClosedLinks === 0) {
     const dvCbe = createdVendors["info@cbetools.test"];
     const candClosed = await prisma.requestCandidate.create({
-      data: { requestId: reqClosed.id, vendorId: dvCbe, source: "DIRECTORY", legalName: "Coimbatore Precision Tools", contactEmail: "info@cbetools.test", pan: "AAHCC2345F", gstin: "33AAHCC2345F1Z5", city: "Coimbatore", state: "Tamil Nadu", inviteStatus: "REGISTERED", buyerOrgId: buyerOrg.id },
+      data: { requestId: reqClosed.id, vendorId: dvCbe, source: "DIRECTORY", legalName: "Coimbatore Precision Tools", contactEmail: "info@cbetools.test", pan: "AAHCC2345F", gstin: "33AAHCC2345F1Z5", city: "Coimbatore", state: "Tamil Nadu", buyerOrgId: buyerOrg.id },
     });
     const linkClosed = await prisma.vendorBuyerLink.create({
       data: {
