@@ -1,0 +1,312 @@
+/* ===============================================
+   GLOBAL RESET & BASE
+   =============================================== */
+*,
+*::before,
+*::after {
+   box-sizing: border-box;
+   margin: 0;
+   padding: 0;
+}
+
+body {
+   font-family: 'Manrope', sans-serif;
+   background: #f4f0ea;
+   min-height: 100vh;
+}
+
+/* Demo page sitting behind the menu */
+.page {
+   min-height: 100vh;
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   padding-top: 80px;
+}
+
+.page__title {
+   font-size: clamp(40px, 8vw, 120px);
+   font-weight: 300;
+   color: #4D3D30;
+}
+
+/* ===============================================
+   BLOCK: header
+   Fixed top bar. Contains the toggle, logo, shop
+   links, the drop-down nav and the dark backdrop.
+   =============================================== */
+.header {
+   background-color: #f4f0ea;
+   position: fixed;
+   top: 0;
+   left: 0;
+   width: 100%;
+   padding: 10px;
+   /* Stays above page content */
+   z-index: 10;
+}
+
+/* ELEMENT: the visible top row with logo / toggle / shop */
+.header__bar {
+   display: flex;
+   justify-content: center;
+   text-transform: uppercase;
+   font-size: 12px;
+   font-weight: 400;
+   position: relative;
+}
+
+.header__bar p {
+   margin: 0;
+}
+
+/* ELEMENT: logo anchored to the left */
+.header__logo {
+   text-decoration: none;
+   color: black;
+   position: absolute;
+   left: 0;
+   text-transform: uppercase;
+}
+
+/* ELEMENT: the toggle (burger + text) — horizontally centered */
+.header__toggle {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 8px;
+   cursor: pointer;
+}
+
+/* ELEMENT: burger icon built from two pseudo-element lines.
+   pointer-events: none → clicks always reach the parent toggle. */
+.header__burger {
+   width: 22.5px;
+   position: relative;
+   pointer-events: none;
+}
+
+.header__burger::after,
+.header__burger::before {
+   content: "";
+   height: 1px;
+   width: 100%;
+   background-color: black;
+   position: relative;
+   display: block;
+   transition: all 1s cubic-bezier(0.76, 0, 0.24, 1);
+}
+
+.header__burger::after  { top: -4px; }
+.header__burger::before { top: 4px;  }
+
+/* MODIFIER: burger turns into an "X" when the menu is open */
+.header__burger--active::after {
+   transform: rotate(45deg);
+   top: -1px;
+}
+.header__burger--active::before {
+   transform: rotate(-45deg);
+   top: 1px;
+}
+
+/* ELEMENT: the text label wrapper — "Menu" and "Close"
+   are stacked in the same spot and cross-faded by GSAP. */
+.header__label {
+   position: relative;
+   display: flex;
+   align-items: center;
+}
+
+.header__label-text {
+   /* Default: visible (used by "Menu") */
+}
+
+/* Second label is absolutely positioned on top of the first,
+   initially invisible; GSAP fades it in when the menu opens. */
+.header__label-text--close {
+   position: absolute;
+   opacity: 0;
+}
+
+/* ELEMENT: shop + cart block — fades out while menu is open */
+.header__shop {
+   display: flex;
+   gap: 30px;
+   position: absolute;
+   right: 0;
+   align-items: center;
+}
+
+/* "Shop" text is hidden on small screens */
+.header__shop-label {
+   display: none;
+}
+
+.header__cart {
+   display: flex;
+   align-items: center;
+   justify-content: center;
+   gap: 8px;
+   cursor: pointer;
+}
+
+/* ELEMENT: dark backdrop below the header.
+   Positioned flush to the bottom of the header (top: 100%)
+   and grows downward as GSAP animates its height. */
+.header__background {
+   background-color: black;
+   opacity: 0.5;
+   width: 100%;
+   height: 0;
+   position: absolute;
+   left: 0;
+   top: 100%;
+   pointer-events: none;
+}
+
+/* ===============================================
+   BLOCK: nav
+   The drop-down panel. Its height animates 0 → auto
+   (measured live in JS) to reveal the content.
+   =============================================== */
+.nav {
+   overflow: hidden;
+   height: 0;
+}
+
+.nav__wrapper {
+   display: flex;
+   gap: 50px;
+   margin-bottom: 80px;
+}
+
+.nav__container {
+   display: flex;
+   flex-direction: column;
+   justify-content: space-between;
+   flex: 1;
+}
+
+/* ELEMENT: nav__body — the big list of links */
+.nav__body {
+   display: flex;
+   flex-wrap: wrap;
+   margin-top: 40px;
+}
+
+/* ELEMENT: a single nav link.
+   display:flex is used for the per-character stagger (each
+   character is wrapped in a <span> by JS, sitting inline).
+   NOTE: no CSS transition here — GSAP handles blur/opacity
+   animations; a CSS transition on top would fight GSAP and
+   cause the hovered link to "stick" before updating. */
+.nav__link {
+   color: black;
+   text-decoration: none;
+   text-transform: uppercase;
+   display: flex;
+   /* overflow: hidden clips each character's initial y:100% */
+   overflow: hidden;
+   font-size: 32px;
+   padding-right: 30px;
+   padding-top: 10px;
+   font-weight: 300;
+   filter: blur(0px);
+   opacity: 1;
+}
+
+/* Each character is wrapped in a span by JS so it can slide up individually */
+.nav__link span {
+   display: inline-block;
+   will-change: transform, opacity;
+}
+
+/* ELEMENT: nav__footer — small credit lines at the bottom */
+.nav__footer {
+   display: flex;
+   align-items: flex-end;
+   flex-wrap: wrap;
+   font-size: 12px;
+   text-transform: uppercase;
+   margin-top: 40px;
+}
+
+.nav__footer ul {
+   width: 50%;
+   margin-top: 10px;
+   overflow: hidden;
+   list-style: none;
+}
+
+.nav__footer li {
+   /* Each <li> will be animated (slide up from y:100%) */
+   will-change: transform, opacity;
+}
+
+.nav__footer li span {
+   color: #9f9689;
+}
+
+/* ELEMENT: nav__image — preview image on the right (desktop only) */
+.nav__image {
+   display: none;
+}
+
+.nav__image img {
+   width: 100%;
+   height: 100%;
+   object-fit: cover;
+}
+
+/* ===============================================
+   RESPONSIVE
+   =============================================== */
+@media (min-width: 600px) {
+   .header {
+      padding: 20px;
+   }
+
+   .header__bar {
+      font-size: 15px;
+   }
+
+   .header__shop-label {
+      display: block;
+      cursor: pointer;
+   }
+}
+
+@media (min-width: 1000px) {
+   .nav__wrapper {
+      margin-bottom: 0;
+      justify-content: space-between;
+   }
+
+   .nav__body {
+      max-width: 1200px;
+      margin-top: 80px;
+   }
+
+   .nav__link {
+      font-size: 5vw;
+      padding-right: 2vw;
+   }
+
+   .nav__footer {
+      justify-content: space-between;
+   }
+
+   .nav__footer ul {
+      width: auto;
+   }
+
+   /* Show the preview image only on large screens */
+   .nav__image {
+      display: block;
+      width: 500px;
+      height: 450px;
+      position: relative;
+      opacity: 0;
+   }
+}

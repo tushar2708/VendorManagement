@@ -1,0 +1,150 @@
+.page_content {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+#page_content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.lists_c {
+  width: 100%;
+  display: flex;
+  margin-top: 80px;
+}
+dl {
+  display: flex;
+  width: 100%;
+}
+.hero_content {
+  width: 100%;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+  justify-content: space-between;
+  opacity: 0;
+}
+
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  width: 100%;
+  justify-content: space-between;
+  height: 100vh;
+}
+
+.hero_content li {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  position: relative;
+  padding: 10px 0;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.lines {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 1px;
+  overflow: hidden;
+}
+.inner_lines {
+  background-color: black;
+  width: 100%;
+  height: 100%;
+}
+
+.inner_linesright {
+  transform: translateX(-100%);
+}
+
+.inner_linesleft {
+  transform: translateX(100%);
+}
+.hero_content ul {
+  width: 100%;
+
+  padding: 0 20px;
+}
+
+.inner_linesright,
+.inner_linesleft {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.anim_p {
+  backface-visibility: hidden;
+}
+
+h1 {
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
+.char-wrapper {
+  backface-visibility: hidden;
+  perspective: 1000px;
+  transform: translateZ(0);
+}
+
+.links_codrops {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  display: flex;
+  gap: 20px;
+  pointer-events: auto;
+  z-index: 20;
+  justify-content: space-between;
+}
+@media (max-width: 900px) {
+  .lists_c {
+    width: 100%;
+
+    display: flex;
+    flex-direction: column;
+    margin-top: 80px;
+  }
+  dl {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .desktop {
+    display: none;
+    padding: 0 !important;
+
+    height: 0;
+  }
+  .lists_c ul {
+    width: 100%;
+  }
+  .hero_content ul {
+    width: 90%;
+
+    padding: 0 20px;
+  }
+
+  .links_codrops {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    display: flex;
+    flex-direction: column;
+    font-size: 13px;
+    gap: 10px;
+    pointer-events: auto;
+    z-index: 20;
+  }
+}

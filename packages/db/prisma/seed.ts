@@ -442,11 +442,32 @@ async function main() {
     });
   }
 
+  // ── Notifications ──
+  const notificationData = [
+    { userId: userIds["buyer@meridian.test"], type: "VENDOR_SUBMITTED", title: "Gujarat Metal Works submitted onboarding details", vendorName: "Gujarat Metal Works", read: false },
+    { userId: userIds["buyer@meridian.test"], type: "VERIFICATION_COMPLETE", title: "Verification complete for Ludhiana Steel Fabricators", body: "All checks passed", vendorName: "Ludhiana Steel Fabricators", read: false },
+    { userId: userIds["buyer@meridian.test"], type: "APPROVAL_DECIDED", title: "Financial Crime approved for Ludhiana Steel", vendorName: "Ludhiana Steel Fabricators", read: true },
+    { userId: userIds["quality@meridian.test"], type: "APPROVAL_NEEDED", title: "Quality approval needed for Ludhiana Steel", vendorName: "Ludhiana Steel Fabricators", read: false },
+    { userId: userIds["buyer@meridian.test"], type: "ERP_COMPLETE", title: "Coimbatore Precision Tools is now active in SAP", body: "Vendor code: 0001A3B2C1", vendorName: "Coimbatore Precision Tools", read: true },
+    { userId: userIds["buyer@meridian.test"], type: "CONTRACT_SIGNED", title: "NDA signed by Ludhiana Steel Fabricators", vendorName: "Ludhiana Steel Fabricators", read: false },
+    { userId: userIds["finance@meridian.test"], type: "APPROVAL_NEEDED", title: "Finance approval needed for Ludhiana Steel", vendorName: "Ludhiana Steel Fabricators", read: false },
+    { userId: userIds["ceo@meridian.test"], type: "SLA_BREACH", title: "Onboarding SLA breached for Gujarat Metal Works", body: "16 days (target 14)", vendorName: "Gujarat Metal Works", read: false },
+  ];
+
+  for (const n of notificationData) {
+    const notifId = `seed-notif-${n.type}-${n.userId.slice(0, 8)}`;
+    const existing = await prisma.notification.findUnique({ where: { id: notifId } });
+    if (!existing) {
+      await prisma.notification.create({ data: { id: notifId, ...n } });
+    }
+  }
+
   // ── Summary ──
-  const [users, dvs, reqs, cands, links, tasks, contracts, subs, checks, quotations] = await Promise.all([
+  const [users, dvs, reqs, cands, links, tasks, contracts, subs, checks, quotations, notifs] = await Promise.all([
     prisma.user.count(), prisma.directoryVendor.count(), prisma.vendorRequest.count(),
     prisma.requestCandidate.count(), prisma.vendorBuyerLink.count(), prisma.reviewTask.count(),
     prisma.contract.count(), prisma.submission.count(), prisma.verificationCheck.count(), prisma.quotation.count(),
+    prisma.notification.count(),
   ]);
   console.log("\nSeed complete.\n");
   console.log("  Table                 Created   Skipped   Total");
@@ -456,7 +477,7 @@ async function main() {
     ["RequestCandidate", cands], ["VendorBuyerLink", links], ["VendorInvitation", await prisma.vendorInvitation.count()],
     ["Submission", subs], ["FieldValue", await prisma.fieldValue.count()],
     ["VerificationCheck", checks], ["ReviewTask", tasks], ["Contract", contracts],
-    ["Quotation", quotations], ["SlaRule", await prisma.slaRule.count()], ["Account", await prisma.account.count()],
+    ["Quotation", quotations], ["Notification", notifs], ["SlaRule", await prisma.slaRule.count()], ["Account", await prisma.account.count()],
   ] as const;
   for (const [name, total] of rows) {
     const s = stats[name] ?? { created: 0, skipped: 0 };

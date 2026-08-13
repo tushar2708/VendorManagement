@@ -13,8 +13,7 @@ import {
 import type { BuyerLinkDetail } from '@vendor-management/shared';
 import { Badge } from '../atoms/Badge.js';
 import { Button, Card, Spinner, cn } from '../ui.js';
-import { Toast } from '../atoms/Toast.js';
-import { useToast } from '../../hooks/use-toast.js';
+import { useToast } from '../atoms/Toast.js';
 import { getStatusLabel, getStatusVariant } from '../../lib/stage.js';
 
 interface VendorDrawerProps {
@@ -26,7 +25,7 @@ export function VendorDrawer({ linkId, onClose }: VendorDrawerProps): React.Reac
   const [detail, setDetail] = useState<BuyerLinkDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [isActing, setIsActing] = useState(false);
-  const { toast, showToast, hideToast } = useToast();
+  const toast = useToast();
 
   // Review decision form state
   const [reviewScore, setReviewScore] = useState('');
@@ -43,10 +42,10 @@ export function VendorDrawer({ linkId, onClose }: VendorDrawerProps): React.Reac
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch vendor link detail:', err);
-      showToast('Failed to load vendor details', 'error');
+      toast.error('Failed to load vendor details');
       setLoading(false);
     }
-  }, [linkId, showToast]);
+  }, [linkId, toast]);
 
   // Polling
   useEffect(() => {
@@ -59,176 +58,167 @@ export function VendorDrawer({ linkId, onClose }: VendorDrawerProps): React.Reac
     if (actionInFlight.current || isActing) return;
     actionInFlight.current = checkType;
     setIsActing(true);
-    hideToast();
 
     try {
       await runCheck(linkId, checkType);
-      showToast(`Running ${checkType} check...`, 'info');
+      toast.info(`Running ${checkType} check...`);
       await fetchDetail();
     } catch (err) {
       console.error(`Failed to run ${checkType} check:`, err);
-      showToast(`Failed to run ${checkType} check`, 'error');
+      toast.error(`Failed to run ${checkType} check`);
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, isActing, toast, fetchDetail]);
 
   const handleResolveCheck = useCallback(async (checkId: string, action: 'accept' | 'reject') => {
     if (actionInFlight.current || isActing) return;
     actionInFlight.current = `resolve-${checkId}`;
     setIsActing(true);
-    hideToast();
 
     try {
       await resolveCheck(linkId, checkId, action);
-      showToast(`Check ${action}ed successfully`, 'success');
+      toast.success(`Check ${action}ed successfully`);
       await fetchDetail();
     } catch (err) {
       console.error(`Failed to ${action} check:`, err);
-      showToast(`Failed to ${action} check`, 'error');
+      toast.error(`Failed to ${action} check`);
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, isActing, toast, fetchDetail]);
 
   const handleRequestChanges = useCallback(async () => {
     if (!requestChangesReason.trim() || actionInFlight.current || isActing) return;
     actionInFlight.current = 'request-changes';
     setIsActing(true);
-    hideToast();
 
     try {
       await requestChanges(linkId, requestChangesReason);
-      showToast('Changes requested successfully', 'success');
+      toast.success('Changes requested successfully');
       setRequestChangesReason('');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to request changes:', err);
-      showToast('Failed to request changes', 'error');
+      toast.error('Failed to request changes');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, requestChangesReason, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, requestChangesReason, isActing, toast, fetchDetail]);
 
   const handleReviewClear = useCallback(async () => {
     const score = parseInt(reviewScore, 10);
     if (Number.isNaN(score) || score < 0 || score > 100 || actionInFlight.current || isActing) return;
     actionInFlight.current = 'review-clear';
     setIsActing(true);
-    hideToast();
 
     try {
       await reviewClear(linkId, score);
-      showToast('Vendor cleared successfully', 'success');
+      toast.success('Vendor cleared successfully');
       setReviewScore('');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to clear vendor:', err);
-      showToast('Failed to clear vendor', 'error');
+      toast.error('Failed to clear vendor');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, reviewScore, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, reviewScore, isActing, toast, fetchDetail]);
 
   const handleReviewReject = useCallback(async () => {
     if (!rejectReason.trim() || actionInFlight.current || isActing) return;
     actionInFlight.current = 'review-reject';
     setIsActing(true);
-    hideToast();
 
     try {
       await reviewReject(linkId, rejectReason);
-      showToast('Vendor rejected successfully', 'success');
+      toast.success('Vendor rejected successfully');
       setRejectReason('');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to reject vendor:', err);
-      showToast('Failed to reject vendor', 'error');
+      toast.error('Failed to reject vendor');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, rejectReason, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, rejectReason, isActing, toast, fetchDetail]);
 
   const handleAwardLink = useCallback(async () => {
     if (actionInFlight.current || isActing) return;
     actionInFlight.current = 'award';
     setIsActing(true);
-    hideToast();
 
     try {
       await awardLink(linkId);
-      showToast('Vendor awarded successfully', 'success');
+      toast.success('Vendor awarded successfully');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to award vendor:', err);
-      showToast('Failed to award vendor', 'error');
+      toast.error('Failed to award vendor');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, isActing, toast, fetchDetail]);
 
   const handleAdvanceToContracts = useCallback(async () => {
     if (actionInFlight.current || isActing) return;
     actionInFlight.current = 'advance';
     setIsActing(true);
-    hideToast();
 
     try {
       await advanceToContracts(linkId);
-      showToast('Vendor advanced to contracts', 'success');
+      toast.success('Vendor advanced to contracts');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to advance vendor:', err);
-      showToast('Failed to advance vendor', 'error');
+      toast.error('Failed to advance vendor');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, isActing, toast, fetchDetail]);
 
   const handlePushErp = useCallback(async () => {
     if (actionInFlight.current || isActing) return;
     actionInFlight.current = 'push-erp';
     setIsActing(true);
-    hideToast();
 
     try {
       await pushErp(linkId);
-      showToast('Pushing to ERP...', 'info');
+      toast.info('Pushing to ERP...');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to push to ERP:', err);
-      showToast('Failed to push to ERP', 'error');
+      toast.error('Failed to push to ERP');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, isActing, toast, fetchDetail]);
 
   const handleRetryErp = useCallback(async () => {
     if (actionInFlight.current || isActing) return;
     actionInFlight.current = 'retry-erp';
     setIsActing(true);
-    hideToast();
 
     try {
       await retryErp(linkId);
-      showToast('Retrying ERP sync...', 'info');
+      toast.info('Retrying ERP sync...');
       await fetchDetail();
     } catch (err) {
       console.error('Failed to retry ERP:', err);
-      showToast('Failed to retry ERP', 'error');
+      toast.error('Failed to retry ERP');
     } finally {
       actionInFlight.current = null;
       setIsActing(false);
     }
-  }, [linkId, isActing, hideToast, showToast, fetchDetail]);
+  }, [linkId, isActing, toast, fetchDetail]);
 
   if (loading && !detail) {
     return (
@@ -669,14 +659,6 @@ export function VendorDrawer({ linkId, onClose }: VendorDrawerProps): React.Reac
           )}
         </div>
       </div>
-
-      {toast && (
-        <Toast
-          message={toast.message}
-          variant={toast.variant}
-          onClose={hideToast}
-        />
-      )}
     </div>
   );
 }

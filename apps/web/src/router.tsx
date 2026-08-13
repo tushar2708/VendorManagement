@@ -32,11 +32,11 @@ import { RoleGuard } from './components/role-guard.js';
 
 export const router = createBrowserRouter([
   { path: "/", element: <Home /> },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/signup", element: <SignupPage /> },
   {
     element: <AuthLayout />,
     children: [
-      { path: "/login", element: <LoginPage /> },
-      { path: "/signup", element: <SignupPage /> },
       { path: "/forgot-password", element: <ForgotPasswordPage /> },
     ],
   },

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { safeNotify, notifyRole } from '../services/notification-service.js';
 import { prisma } from '@vendor-management/db';
 import { requireAuth, requireRole, requireOwnLink } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';

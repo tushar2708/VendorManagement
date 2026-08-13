@@ -215,6 +215,7 @@ model User {
   approvalDecisions   ApprovalDecision[] @relation("DecisionMaker")
   vendorLinks         VendorBuyerLink[]  @relation("LinkUsers")
   capturedQuotations  Quotation[]        @relation("QuotationCapturer")
+  notifications       Notification[]
 
   @@index([buyerOrgId])
   @@index([vendorOrgId])
@@ -693,4 +694,22 @@ model Quotation {
   @@unique([requestId, vendorId])
   @@index([requestId])
   @@index([vendorId])
+}
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        String
+  title       String
+  body        String?
+  vendorName  String?
+  vendorId    String?
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
 }
