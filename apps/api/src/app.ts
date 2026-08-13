@@ -26,6 +26,7 @@ import { erpRouter } from "./routes/erp-routes.js";
 import { quotationsRouter } from "./routes/quotations.js";
 import { controlsRouter } from "./routes/controls-routes.js";
 import { mobileRouter } from "./routes/mobile.js";
+import { notificationsRouter } from "./routes/notifications.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
@@ -56,6 +57,7 @@ app.use("/api/vendors", erpRouter);
 app.use("/api/vendors", controlsRouter);
 app.use("/api/requests", quotationsRouter);
 app.use("/api/vendor/mobile", mobileRouter);
+app.use("/api/notifications", notificationsRouter);
 
 app.all("/api/*splat", (_request, response) => {
   response.status(404).json({ success: false, error: "API route not found" });

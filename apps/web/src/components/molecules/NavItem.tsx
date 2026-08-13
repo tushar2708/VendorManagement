@@ -20,11 +20,11 @@ export function NavItem({ path, label, icon }: NavItemProps): React.ReactElement
       className={cn(
         'flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors',
         active
-          ? 'bg-indigo-600 text-white'
-          : 'text-slate-300 hover:bg-slate-700 hover:text-white',
+          ? 'bg-forest-600/50 text-cream-50'
+          : 'text-sage-300 hover:bg-forest-600 hover:text-cream-50',
       )}
     >
-      <Icon name={icon} size={18} className={active ? 'text-white' : 'text-slate-400'} />
+      <Icon name={icon} size={18} className={active ? 'text-cream-50' : 'text-sage-400'} />
       {label}
     </Link>
   );

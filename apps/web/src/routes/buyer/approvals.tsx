@@ -3,11 +3,10 @@ import { getApprovals, decideApproval, type ApprovalItem } from '../../lib/requi
 import { errorMessage } from '../../lib/auth-api.js';
 import { Card, Spinner, Button } from '../../components/ui.js';
 import { Badge } from '../../components/atoms/Badge.js';
-import { Toast } from '../../components/atoms/Toast.js';
 import { EmptyState } from '../../components/molecules/EmptyState.js';
 import { VendorDrawer } from '../../components/organisms/VendorDrawer.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
-import { useToast } from '../../hooks/use-toast.js';
+import { useToast } from '../../components/atoms/Toast.js';
 import { useAuth } from '../../hooks/use-auth.js';
 import { canDecide } from '../../lib/permissions.js';
 
@@ -30,7 +29,7 @@ export function ApproverQueuePage(): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [drawerLinkId, setDrawerLinkId] = useState<string | null>(null);
   const headingRef = useTextReveal<HTMLHeadingElement>();
-  const { toast, showToast, hideToast } = useToast();
+  const toast = useToast();
   const { user } = useAuth();
   const canMakeDecisions = canDecide(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
 
@@ -47,9 +46,9 @@ export function ApproverQueuePage(): React.ReactElement {
     try {
       await decideApproval(id, { status: decision });
       load();
-      showToast('Decision recorded', 'success');
+      toast.success('Decision recorded');
     } catch (e: unknown) {
-      showToast(errorMessage(e, 'Failed to record decision'), 'error');
+      toast.error(errorMessage(e, 'Failed to record decision'));
     }
   }
 
@@ -112,7 +111,6 @@ export function ApproverQueuePage(): React.ReactElement {
         </Card>
       )}
       {drawerLinkId && <VendorDrawer linkId={drawerLinkId} onClose={() => setDrawerLinkId(null)} />}
-      {toast && <Toast message={toast.message} variant={toast.variant} onClose={hideToast} />}
     </div>
   );
 }

@@ -25,3 +25,4 @@ export * from "./schemas/activity-v2.js";
 export * from "./schemas/quotation.js";
 export * from "./schemas/tracker.js";
 export * from "./schemas/vendor-console.js";
+export * from "./schemas/notification.js";

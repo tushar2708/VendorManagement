@@ -4,9 +4,8 @@ import { listTeam, createTeamMember, removeTeamMember, updateTeamMember } from "
 import { errorMessage } from "../../lib/auth-api.js";
 import { Card, Spinner, Button } from "../../components/ui.js";
 import { Badge } from "../../components/atoms/Badge.js";
-import { Toast } from "../../components/atoms/Toast.js";
 import { useTextReveal } from "../../hooks/use-text-reveal.js";
-import { useToast } from "../../hooks/use-toast.js";
+import { useToast } from "../../components/atoms/Toast.js";
 import { useAuth } from "../../hooks/use-auth.js";
 
 const ROLE_OPTIONS = ["OWNER", "QUALITY", "FINANCE", "TAX", "LEGAL"] as const;
@@ -23,7 +22,7 @@ export function TeamPage(): React.ReactElement {
   const [editName, setEditName] = useState("");
   const [editRole, setEditRole] = useState<string>("");
   const headingRef = useTextReveal<HTMLHeadingElement>();
-  const { toast, showToast, hideToast } = useToast();
+  const toast = useToast();
   const { user } = useAuth();
 
   function load() {
@@ -43,9 +42,9 @@ export function TeamPage(): React.ReactElement {
       await createTeamMember({ fullName, email, role: role as any, password });
       setFullName(""); setEmail(""); setPassword("");
       load();
-      showToast("Team member added", "success");
+      toast.success("Team member added");
     } catch (err) {
-      showToast(errorMessage(err, "Failed to add"), "error");
+      toast.error(errorMessage(err, "Failed to add"));
     } finally {
       setAdding(false);
     }
@@ -55,9 +54,9 @@ export function TeamPage(): React.ReactElement {
     try {
       await removeTeamMember(id);
       load();
-      showToast("Team member removed", "success");
+      toast.success("Team member removed");
     } catch (err) {
-      showToast(errorMessage(err, "Failed to remove"), "error");
+      toast.error(errorMessage(err, "Failed to remove"));
     }
   }
 
@@ -79,9 +78,9 @@ export function TeamPage(): React.ReactElement {
       await updateTeamMember(editingId, { fullName: editName, role: editRole });
       setEditingId(null);
       load();
-      showToast("Team member updated", "success");
+      toast.success("Team member updated");
     } catch (err) {
-      showToast(errorMessage(err, "Failed to update"), "error");
+      toast.error(errorMessage(err, "Failed to update"));
     }
   }
 
@@ -170,7 +169,6 @@ export function TeamPage(): React.ReactElement {
           </Card>
         </>
       )}
-      {toast && <Toast message={toast.message} variant={toast.variant} onClose={hideToast} />}
     </div>
   );
 }

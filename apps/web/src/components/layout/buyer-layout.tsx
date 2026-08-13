@@ -4,7 +4,8 @@ import { logout } from '@/lib/auth-client.js';
 import { NavItem } from '../molecules/NavItem.js';
 import { Avatar } from '../atoms/Avatar.js';
 import { Badge } from '../atoms/Badge.js';
-import logoSvg from '@/assets/logo.svg';
+import { VendraxMark } from '../Brand.js';
+import { NotificationBell } from '../molecules/NotificationBell.js';
 
 const navItems = [
   { path: '/dashboard', label: 'Dashboard', icon: 'grid' as const },
@@ -26,12 +27,12 @@ export function BuyerLayout() {
 
   return (
     <div className="flex min-h-screen">
-      <aside className="flex w-56 flex-col bg-slate-800">
+      <aside className="flex w-56 flex-col bg-forest-700">
         <div className="flex items-center gap-2.5 px-4 py-5">
-          <img src={logoSvg} alt="VM" className="h-8 w-8 rounded-lg" />
+          <VendraxMark size={28} />
           <div className="leading-tight">
-            <p className="text-sm font-semibold text-white">Vendor Management</p>
-            <p className="text-[10px] font-medium uppercase tracking-wider text-indigo-400">Buyer View</p>
+            <p className="text-sm font-semibold text-white">Vendrax</p>
+            <p className="text-[10px] font-medium uppercase tracking-wider text-sage-300">Buyer View</p>
           </div>
         </div>
 
@@ -41,15 +42,15 @@ export function BuyerLayout() {
           ))}
         </nav>
 
-        <div className="border-t border-slate-700 px-4 py-3">
+        <div className="border-t border-forest-600 px-4 py-3">
           <div className="flex items-center gap-2">
             <Avatar name={user?.name ?? '?'} size="sm" />
-            <span className="truncate text-xs text-slate-300">{user?.name}</span>
+            <span className="truncate text-xs text-sage-200">{user?.name}</span>
           </div>
           <button
             type="button"
             onClick={handleLogout}
-            className="mt-2 w-full rounded-md px-2 py-1.5 text-left text-xs text-slate-400 hover:bg-slate-700 hover:text-white transition-colors"
+            className="mt-2 w-full rounded-md px-2 py-1.5 text-left text-xs text-sage-300 hover:bg-forest-600 hover:text-cream-50 transition-colors"
           >
             Sign out
           </button>
@@ -57,14 +58,15 @@ export function BuyerLayout() {
       </aside>
 
       <div className="flex flex-1 flex-col">
-        <header className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-3">
+        <header className="flex items-center justify-between border-b border-forest-100 bg-cream-50 px-6 py-3">
           <Badge variant="info">BUYER VIEW</Badge>
           <div className="flex items-center gap-3">
-            <span className="hidden text-sm text-slate-500 sm:inline">{user?.name}</span>
+            <NotificationBell />
+            <span className="hidden text-sm text-forest-500 sm:inline">{user?.name}</span>
             <Avatar name={user?.name ?? '?'} size="md" />
           </div>
         </header>
-        <main className="flex-1 bg-slate-50 p-6 lg:p-8">
+        <main className="flex-1 bg-cream-50 p-6 lg:p-8">
           <Outlet />
         </main>
       </div>
