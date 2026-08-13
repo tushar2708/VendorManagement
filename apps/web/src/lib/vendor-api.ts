@@ -94,3 +94,44 @@ export async function getVendorProfile(): Promise<{ vendor: VendorProfile; check
   const response = await http.get('/api/vendor/profile');
   return { vendor: response.data.vendor, checks: response.data.checks };
 }
+
+export interface VendorAnalytics {
+  totalEngagements: number;
+  activeEngagements: number;
+  completedEngagements: number;
+  avgDaysPerEngagement: number;
+  stageDistribution: Record<string, number>;
+  documentsUploaded: number;
+  documentsOutstanding: number;
+  contractsExecuted: number;
+  contractsTotal: number;
+  checksPassedRate: number;
+  controlsCleared: number;
+  controlsTotal: number;
+}
+
+export async function getVendorAnalytics(): Promise<VendorAnalytics> {
+  const response = await http.get('/api/vendor/analytics');
+  return response.data;
+}
+
+export interface DashboardLink {
+  id: string;
+  state: string;
+  stage: string | null;
+  requirementTitle: string;
+  prequalScore: number | null;
+  erpVendorCode: string | null;
+  court: 'VENDOR' | 'BUYER' | 'PLATFORM' | 'DONE';
+  tat: { vendorPendingDays: number; buyerPendingDays: number };
+  milestones: Array<{ key: string; label: string; state: 'DONE' | 'CURRENT' | 'PENDING' }>;
+  contactName: string | null;
+  documentsUploaded: number;
+  documentsTotal: number;
+  checksStatus: { passed: number; total: number };
+}
+
+export async function getVendorDashboardSummary(): Promise<DashboardLink[]> {
+  const response = await http.get('/api/vendor/dashboard-summary');
+  return response.data.links;
+}

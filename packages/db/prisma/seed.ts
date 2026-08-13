@@ -200,6 +200,23 @@ async function ensureContracts(linkId: string, contracts: Array<{ contractType: 
   }
 }
 
+async function ensureDocuments(linkId: string, submissionId: string, docs: Array<{ checklistItemKey: string; fileName: string }>): Promise<void> {
+  for (const doc of docs) {
+    const existing = await prisma.document.findFirst({ where: { linkId, checklistItemKey: doc.checklistItemKey } });
+    track("Document", !existing);
+    if (!existing) {
+      const blob = await prisma.fileBlob.create({ data: { data: "U2VlZCBkYXRhIHBsYWNlaG9sZGVy", sha256: "seed-" + doc.checklistItemKey } });
+      await prisma.document.create({
+        data: {
+          linkId, submissionId, checklistItemKey: doc.checklistItemKey,
+          fileName: doc.fileName, mimeType: "application/pdf", sizeBytes: 102400,
+          fileBlobId: blob.id, status: "ACCEPTED",
+        },
+      });
+    }
+  }
+}
+
 async function ensureSlaRule(stage: string, slaDays: number): Promise<void> {
   const existing = await prisma.slaRule.findUnique({ where: { stage: stage as any } });
   await prisma.slaRule.upsert({ where: { stage: stage as any }, update: { slaDays }, create: { stage: stage as any, slaDays } });
@@ -394,6 +411,126 @@ async function main() {
   await ensureReviewTasks(link12, ALL_APPROVAL_STAGES.map((s) => ({ stage: s, status: "APPROVED" })), "quality@meridian.test", userIds);
   await ensureContracts(link12, ALL_CONTRACT_TYPES.map((ct) => ({ contractType: ct, state: "EXECUTED", executedAt: new Date(Date.now() - 22 * DAY) })));
 
+  // ── Links for Suresh Mehta (suresh@gujaratmetal.test) — LEADERSHIP vendor ──
+  // Suresh is in the same org as Ramesh (Gujarat Metal Works). Give him links on different requirements.
+  const sureshUserId = userIds["suresh@gujaratmetal.test"];
+
+  if (sureshUserId) {
+    // Link on VR-1001 (Aluminium HPDC housings) — PREQUAL_IN_PROGRESS
+    const sureshC1 = await ensureCandidate(reqIds["Aluminium HPDC housings — EV inverter"], "orders@gujaratmetal.test", buyerOrg.id);
+    await ensureLink(sureshC1.id, reqIds["Aluminium HPDC housings — EV inverter"], buyerOrg.id, {
+      vendorUserId: sureshUserId, vendorOrgId: vendorOrgIds[0],
+      state: "PREQUAL_IN_PROGRESS", stage: "PREQUAL",
+    });
+
+    // Link on VR-1003 (CNC-machined transmission shafts) — CONTRACTS_IN_PROGRESS (with docs, checks, tasks, contracts)
+    const sureshC2 = await ensureCandidate(reqIds["CNC-machined transmission shafts"], "orders@gujaratmetal.test", buyerOrg.id);
+    const sureshLink2 = await ensureLink(sureshC2.id, reqIds["CNC-machined transmission shafts"], buyerOrg.id, {
+      vendorUserId: sureshUserId, vendorOrgId: vendorOrgIds[0],
+      state: "CONTRACTS_IN_PROGRESS", stage: "FULL", prequalScore: 85,
+      awardedAt: new Date(Date.now() - 12 * DAY),
+    });
+    const sureshSub2p = await ensureSubmission(sureshLink2, "PREQUAL", "SUBMITTED", new Date(Date.now() - 18 * DAY));
+    const sureshSub2f = await ensureSubmission(sureshLink2, "FULL", "SUBMITTED", new Date(Date.now() - 6 * DAY));
+    await ensureDocuments(sureshLink2, sureshSub2p, [
+      { checklistItemKey: "pan_card", fileName: "PAN_Card_Gujarat_Metal.pdf" },
+      { checklistItemKey: "gst_certificate", fileName: "GST_Certificate.pdf" },
+      { checklistItemKey: "incorporation_cert", fileName: "COI_Gujarat_Metal.pdf" },
+    ]);
+    await ensureDocuments(sureshLink2, sureshSub2f, [
+      { checklistItemKey: "cancelled_cheque", fileName: "Cancelled_Cheque_HDFC.pdf" },
+      { checklistItemKey: "bank_mandate", fileName: "Bank_Mandate_Form.pdf" },
+      { checklistItemKey: "gst_returns", fileName: "GST_Returns_Q1_2025.pdf" },
+      { checklistItemKey: "financial_statements", fileName: "Audited_Financials_FY25.pdf" },
+    ]);
+    await ensureVerificationChecks(sureshLink2, [
+      { checkType: "PAN", status: "PASSED", matchScore: 97, detail: { reason: "Verified" } },
+      { checkType: "GST", status: "PASSED", matchScore: 94, detail: { reason: "Verified" } },
+      { checkType: "UDYAM", status: "PASSED", matchScore: 88, detail: { reason: "Verified" } },
+      { checkType: "PENNY_DROP", status: "PASSED", matchScore: 100, detail: { reason: "Verified" } },
+    ]);
+    await ensureReviewTasks(sureshLink2, [
+      { stage: "FINANCIAL_CRIME", status: "APPROVED", slaHours: 72 },
+      { stage: "COMPLIANCE", status: "APPROVED", slaHours: 120 },
+      { stage: "LEGAL", status: "PENDING", slaHours: 168 },
+      { stage: "IT_INFOSEC", status: "APPROVED", slaHours: 96 },
+      { stage: "TAX", status: "IN_PROGRESS", slaHours: 72 },
+      { stage: "PROCUREMENT", status: "APPROVED", slaHours: 120 },
+      { stage: "DATA_PRIVACY", status: "PENDING", slaHours: 96 },
+      { stage: "BUSINESS_OWNER", status: "PENDING", slaHours: 120 },
+    ], "quality@meridian.test", userIds);
+    await ensureContracts(sureshLink2, [
+      { contractType: "NDA", state: "EXECUTED", executedAt: new Date(Date.now() - 4 * DAY) },
+      { contractType: "MSA", state: "AWAITING_SIGNATURES" },
+      { contractType: "QUALITY_AGREEMENT", state: "AGREED" },
+      { contractType: "SUPPLY_AGREEMENT", state: "DRAFT_UPLOADED" },
+      { contractType: "PRICING_AGREEMENT", state: "DRAFT_PENDING" },
+      { contractType: "DATA_PROCESSING", state: "CHANGES_REQUESTED" },
+    ]);
+
+    // Link on VR-1005 (Gravity-cast brake calipers) — ONBOARDED (completed engagement)
+    const sureshC3 = await ensureCandidate(reqIds["Gravity-cast brake calipers (2025 program)"], "orders@gujaratmetal.test", buyerOrg.id);
+    const sureshLink3 = await ensureLink(sureshC3.id, reqIds["Gravity-cast brake calipers (2025 program)"], buyerOrg.id, {
+      vendorUserId: sureshUserId, vendorOrgId: vendorOrgIds[0],
+      state: "ONBOARDED", stage: "FULL", prequalScore: 92,
+      awardedAt: new Date(Date.now() - 25 * DAY),
+      onboardedAt: new Date(Date.now() - 1 * DAY),
+      erpVendorCode: "0001F8A3E7",
+    });
+    await ensureVerificationChecks(sureshLink3, [
+      { checkType: "PAN", status: "PASSED", matchScore: 99, detail: { reason: "Verified" } },
+      { checkType: "GST", status: "PASSED", matchScore: 96, detail: { reason: "Verified" } },
+      { checkType: "UDYAM", status: "PASSED", matchScore: 91, detail: { reason: "Verified" } },
+    ]);
+    await ensureReviewTasks(sureshLink3, ALL_APPROVAL_STAGES.map(s => ({ stage: s, status: "APPROVED", slaHours: 96 })), "quality@meridian.test", userIds);
+    await ensureContracts(sureshLink3, ALL_CONTRACT_TYPES.map(ct => ({ contractType: ct, state: "EXECUTED", executedAt: new Date(Date.now() - 3 * DAY) })));
+  }
+
+  // ── Links for Gurpreet Kaur (gurpreet@ludhianasteel.test) — LEADERSHIP vendor ──
+  const gurpreetUserId = userIds["gurpreet@ludhianasteel.test"];
+
+  if (gurpreetUserId) {
+    // Link on VR-1002 (IT consulting vendor panel) — PREQUAL_CLEARED
+    const gurpreetC1 = await ensureCandidate(reqIds["IT consulting vendor panel"], "sales@ludhianasteel.test", buyerOrg.id);
+    await ensureLink(gurpreetC1.id, reqIds["IT consulting vendor panel"], buyerOrg.id, {
+      vendorUserId: gurpreetUserId, vendorOrgId: vendorOrgIds[1],
+      state: "PREQUAL_CLEARED", stage: "PREQUAL", prequalScore: 91,
+    });
+
+    // Link on VR-1004 (Office cleaning) — APPROVED (all gates passed, ready for ERP)
+    const gurpreetC2 = await ensureCandidate(reqIds["Office cleaning & facility management"], "sales@ludhianasteel.test", buyerOrg.id);
+    const gurpreetLink2 = await ensureLink(gurpreetC2.id, reqIds["Office cleaning & facility management"], buyerOrg.id, {
+      vendorUserId: gurpreetUserId, vendorOrgId: vendorOrgIds[1],
+      state: "APPROVED", stage: "FULL", prequalScore: 82,
+      awardedAt: new Date(Date.now() - 15 * DAY),
+    });
+    await ensureVerificationChecks(gurpreetLink2, [
+      { checkType: "PAN", status: "PASSED", matchScore: 95, detail: { reason: "Verified" } },
+      { checkType: "GST", status: "PASSED", matchScore: 93, detail: { reason: "Verified" } },
+      { checkType: "PENNY_DROP", status: "PASSED", matchScore: 100, detail: { reason: "Verified" } },
+      { checkType: "GST_FILINGS", status: "NEEDS_REVIEW", matchScore: 71, detail: { reason: "Partial match" } },
+    ]);
+    await ensureReviewTasks(gurpreetLink2, ALL_APPROVAL_STAGES.map(s => ({ stage: s, status: "APPROVED", slaHours: 96 })), "quality@meridian.test", userIds);
+    await ensureContracts(gurpreetLink2, ALL_CONTRACT_TYPES.map(ct => ({ contractType: ct, state: "EXECUTED", executedAt: new Date(Date.now() - 4 * DAY) })));
+
+    // Link on VR-1006 (Plated connector terminals) — ONBOARDED
+    const gurpreetC3 = await ensureCandidate(reqIds["Plated connector terminals"], "sales@ludhianasteel.test", buyerOrg.id);
+    const gurpreetLink3 = await ensureLink(gurpreetC3.id, reqIds["Plated connector terminals"], buyerOrg.id, {
+      vendorUserId: gurpreetUserId, vendorOrgId: vendorOrgIds[1],
+      state: "ONBOARDED", stage: "FULL", prequalScore: 95,
+      awardedAt: new Date(Date.now() - 20 * DAY),
+      onboardedAt: new Date(Date.now() - 2 * DAY),
+      erpVendorCode: "0001B7C4D2",
+    });
+    await ensureVerificationChecks(gurpreetLink3, [
+      { checkType: "PAN", status: "PASSED", matchScore: 98, detail: { reason: "Verified" } },
+      { checkType: "GST", status: "PASSED", matchScore: 97, detail: { reason: "Verified" } },
+      { checkType: "UDYAM", status: "PASSED", matchScore: 90, detail: { reason: "Verified" } },
+    ]);
+    await ensureReviewTasks(gurpreetLink3, ALL_APPROVAL_STAGES.map(s => ({ stage: s, status: "APPROVED", slaHours: 96 })), "quality@meridian.test", userIds);
+    await ensureContracts(gurpreetLink3, ALL_CONTRACT_TYPES.map(ct => ({ contractType: ct, state: "EXECUTED", executedAt: new Date(Date.now() - 5 * DAY) })));
+  }
+
   // ── SLA Rules ──
   for (const s of SLA_RULES) await ensureSlaRule(s.stage, s.slaDays);
 
@@ -470,18 +607,19 @@ async function main() {
     prisma.notification.count(),
   ]);
   console.log("\nSeed complete.\n");
-  console.log("  Table                 Created   Skipped   Total");
+  console.log("  Table                 Created   Skipped   Total     DB rows");
   console.log("  ─────────────────────────────────────────────────");
   const rows = [
     ["User", users], ["DirectoryVendor", dvs], ["VendorRequest", reqs],
     ["RequestCandidate", cands], ["VendorBuyerLink", links], ["VendorInvitation", await prisma.vendorInvitation.count()],
-    ["Submission", subs], ["FieldValue", await prisma.fieldValue.count()],
+    ["Submission", subs], ["Document", await prisma.document.count()], ["FieldValue", await prisma.fieldValue.count()],
     ["VerificationCheck", checks], ["ReviewTask", tasks], ["Contract", contracts],
     ["Quotation", quotations], ["Notification", notifs], ["SlaRule", await prisma.slaRule.count()], ["Account", await prisma.account.count()],
   ] as const;
-  for (const [name, total] of rows) {
+  for (const [name, dbCount] of rows) {
     const s = stats[name] ?? { created: 0, skipped: 0 };
-    console.log(`  ${name.padEnd(22)} ${String(s.created).padStart(5)}     ${String(s.skipped).padStart(5)}     ${String(total).padStart(5)}`);
+    const total = s.created + s.skipped;
+    console.log(`  ${name.padEnd(22)} ${String(s.created).padStart(5)}     ${String(s.skipped).padStart(5)}     ${String(total).padStart(5)}     (DB: ${dbCount})`);
   }
 }
 
