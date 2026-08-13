@@ -68,14 +68,15 @@ export function VendorTracker({
           </div>
 
           {/* 9-dot rail */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-2">
+          <div className="flex items-center gap-2 overflow-x-auto pb-6">
             {LINK_PROGRESS_RAIL.map((milestone, idx) => {
               const dotState = getLinkStepState(idx, stepIndex);
               return (
-                <div key={idx} className="flex items-center">
+                <div key={idx} className="flex flex-col items-center">
                   <ProgressDot state={dotState} size="sm" />
+                  <span className="text-xs text-slate-500 mt-1">{LINK_STATE_META[milestone]?.label}</span>
                   {idx < LINK_PROGRESS_RAIL.length - 1 && (
-                    <div className="w-6 h-0.5 bg-gray-300 mx-1" />
+                    <div className="w-6 h-0.5 bg-gray-300 mx-1 -mt-1" />
                   )}
                 </div>
               );

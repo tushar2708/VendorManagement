@@ -44,9 +44,13 @@ export function ApproverQueuePage(): React.ReactElement {
   useEffect(load, []);
 
   async function handleDecide(id: string, decision: string): Promise<void> {
-    await decideApproval(id, { status: decision });
-    load();
-    showToast('Decision recorded', 'success');
+    try {
+      await decideApproval(id, { status: decision });
+      load();
+      showToast('Decision recorded', 'success');
+    } catch (e: unknown) {
+      showToast(errorMessage(e, 'Failed to record decision'), 'error');
+    }
   }
 
   return (
@@ -95,7 +99,7 @@ export function ApproverQueuePage(): React.ReactElement {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center gap-2 justify-end">
-                      <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'REJECTED')}>Reject</Button>
+                      <Button size="sm" variant="secondary" onClick={() => handleDecide(a.id, 'CHANGES_REQUESTED')}>Request Changes</Button>
                       <Button size="sm" onClick={() => handleDecide(a.id, 'APPROVED')}>Approve</Button>
                     </div>
                   </td>

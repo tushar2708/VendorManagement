@@ -133,6 +133,7 @@ export const vendorLinkDTOSchema = z.object({
   state: linkStateSchema,
   stage: linkStageSchema.nullable(),
   requirementTitle: z.string(),
+  processCategories: z.array(z.string()),
   buyerOrgName: z.string(),
   buyerContact: z.object({
     name: z.string().nullable(),

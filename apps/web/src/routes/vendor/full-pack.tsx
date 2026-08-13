@@ -11,8 +11,13 @@ export function FullPackPage(): React.ReactElement {
 
   async function load() {
     const links = await listMyLinks();
-    if (links.length > 0) {
-      const detail = await getLink(links[0].id);
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get("linkId");
+    const target = targetId
+      ? links.find((l) => l.id === targetId)
+      : links.find((l) => l.state === "FULL_IN_PROGRESS" || l.state === "AWARDED") ?? links[0];
+    if (target) {
+      const detail = await getLink(target.id);
       setLink(detail);
     }
     setLoading(false);
@@ -28,7 +33,7 @@ export function FullPackPage(): React.ReactElement {
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Full pack</h1>
       <VendorTracker state={link.state} tat={link.tat} erpVendorCode={link.erpVendorCode} buyerContact={link.buyerContact} />
       {link.state === "FULL_IN_PROGRESS" && (
-        <OnboardingForm linkId={link.id} stage="FULL" processCategories={[]} fields={link.fields} documents={link.documents} onRefresh={load} />
+        <OnboardingForm linkId={link.id} stage="FULL" processCategories={link.processCategories ?? []} fields={link.fields} documents={link.documents} onRefresh={load} />
       )}
       {link.state !== "FULL_IN_PROGRESS" && (
         <Card className="mt-6 p-6"><p className="text-sm text-slate-500">Full pack is {link.state === "FULL_SUBMITTED" ? "submitted and under review" : "complete"}.</p></Card>

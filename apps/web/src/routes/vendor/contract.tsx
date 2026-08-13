@@ -28,7 +28,7 @@ export function VendorContractPage(): React.ReactElement {
       {link.contracts && link.contracts.length > 0 && (
         <ContractsPanel contracts={link.contracts} mode="VENDOR" onRefresh={load} />
       )}
-      {!link.contracts || link.contracts.length === 0 && (
+      {(!link.contracts || link.contracts.length === 0) && (
         <Card className="mt-6 p-6 text-center">
           <p className="text-sm text-slate-500">No contract available yet.</p>
         </Card>

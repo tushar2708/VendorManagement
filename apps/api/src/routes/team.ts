@@ -37,7 +37,7 @@ teamRouter.post("/", validateBody(createTeamMemberSchema), async (req, res) => {
     if (userId) {
       await prisma.user.update({
         where: { id: userId },
-        data: { buyerOrgId: req.user!.buyerOrgId, buyerRole: req.body.role as any },
+        data: { role: "BUYER", buyerOrgId: req.user!.buyerOrgId, buyerRole: req.body.role as any },
       });
     }
     res.status(201).json({ ok: true });
@@ -54,6 +54,9 @@ teamRouter.delete("/:id", async (req, res) => {
   if (!target || target.buyerOrgId !== req.user!.buyerOrgId) {
     res.status(404).json({ error: "User not found" }); return;
   }
-  await prisma.user.delete({ where: { id: req.params.id } });
+  await prisma.user.update({
+    where: { id: req.params.id },
+    data: { buyerOrgId: null, buyerRole: null },
+  });
   res.json({ ok: true });
 });

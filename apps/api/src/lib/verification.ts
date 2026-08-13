@@ -41,7 +41,7 @@ export async function resolveDueChecks(linkId: string): Promise<void> {
       data: {
         status: result.status,
         matchScore: result.matchScore,
-        detail: result.detail,
+        detail: result.detail as any,
         expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       },
     });

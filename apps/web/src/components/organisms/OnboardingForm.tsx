@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { checklistFor } from "@vendor-management/shared";
 import type { FieldDef, DocItemDef } from "@vendor-management/shared";
 import {
@@ -44,6 +44,7 @@ export function OnboardingForm({
   const [docDefs, setDocDefs] = useState<DocItemDef[]>([]);
   const [loading, setLoading] = useState(false);
   const [saveTimer, setSaveTimer] = useState<NodeJS.Timeout | null>(null);
+  const hasChanged = useRef(false);
 
   // Load checklist on mount or when stage/categories change
   useEffect(() => {
@@ -52,9 +53,20 @@ export function OnboardingForm({
     setDocDefs(checklist.documents || []);
   }, [stage, processCategories]);
 
+  // Sync local state when props change
+  useEffect(() => {
+    setFields(initialFields);
+  }, [JSON.stringify(initialFields)]);
+
+  useEffect(() => {
+    setDocuments(initialDocuments);
+  }, [JSON.stringify(initialDocuments)]);
+
   // Autosave fields with debounce
   useEffect(() => {
     if (saveTimer) clearTimeout(saveTimer);
+
+    if (!hasChanged.current) return;
 
     const timer = setTimeout(async () => {
       try {
@@ -71,6 +83,7 @@ export function OnboardingForm({
 
   const handleFieldChange = useCallback(
     (key: string, value: string) => {
+      hasChanged.current = true;
       setFields((prev) => ({ ...prev, [key]: value }));
     },
     []

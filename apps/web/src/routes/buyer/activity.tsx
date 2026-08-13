@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ActivityItem } from "@vendor-management/shared";
 import { getActivityFeed } from "../../lib/activity-api.js";
+import { errorMessage } from "../../lib/auth-api.js";
 import { Card, Spinner } from "../../components/ui.js";
 import { Badge } from "../../components/atoms/Badge.js";
 import { useTextReveal } from "../../hooks/use-text-reveal.js";
@@ -8,12 +9,13 @@ import { useTextReveal } from "../../hooks/use-text-reveal.js";
 export function ActivityPage(): React.ReactElement {
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const headingRef = useTextReveal<HTMLHeadingElement>();
 
   function load() {
     getActivityFeed()
       .then(setActivities)
-      .catch(() => {})
+      .catch((e) => setError(errorMessage(e, 'Failed to load activity')))
       .finally(() => setLoading(false));
   }
 
@@ -43,13 +45,19 @@ export function ActivityPage(): React.ReactElement {
 
       {loading && <div className="mt-16 grid place-items-center"><Spinner className="h-6 w-6" /></div>}
 
-      {!loading && activities.length === 0 && (
+      {error && (
+        <Card className="mt-8 p-8 text-center">
+          <p className="text-sm text-rose-600">{error}</p>
+        </Card>
+      )}
+
+      {!loading && !error && activities.length === 0 && (
         <Card className="mt-8 p-8 text-center">
           <p className="text-sm text-slate-500">No activity yet.</p>
         </Card>
       )}
 
-      {!loading && activities.length > 0 && (
+      {!loading && !error && activities.length > 0 && (
         <div className="mt-6 space-y-3">
           {activities.map((a) => (
             <Card key={a.id} className="flex items-start gap-3 p-4">

@@ -54,12 +54,9 @@ export function VendorDetailPage(): React.ReactElement {
           {[
             ['PAN', v.pan],
             ['GSTIN', v.primaryGstin],
-            ['UDYAM', v.udyamNumber],
-            ['VENDOR CODE', v.vendorCode],
-            ['CATEGORY', v.category],
-            ['TYPE', v.vendorType],
-            ['PRE-QUAL SCORE', v.prequalScore != null ? String(v.prequalScore) : '—'],
             ['CONTACT', v.contactEmail],
+            ['CITY', v.city],
+            ['STATE', v.state],
             ['ADDED', formatDate(v.createdAt)],
           ].map(([label, value]) => (
             <div key={label}>

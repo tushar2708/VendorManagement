@@ -258,7 +258,7 @@ model Verification {
 
 model BuyerOrg {
   id        String   @id @default(cuid())
-  name      String
+  legalName String
   gstId     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -273,10 +273,13 @@ model BuyerOrg {
 }
 
 model VendorOrg {
-  id        String   @id @default(cuid())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String   @id @default(cuid())
+  legalName    String
+  contactEmail String
+  pan          String?
+  gstin        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 
   users       User[]             @relation("VendorUsers")
   vendorLinks VendorBuyerLink[]  @relation("VendorOrgLinks")
@@ -492,7 +495,7 @@ model VerificationCheck {
   subjectValue  String
   status        VerificationStatus @default(RUNNING)
   matchScore    Int?
-  detail        String?
+  detail        Json?
   ranAt         DateTime?
   expiresAt     DateTime?
   createdAt     DateTime           @default(now())

@@ -117,7 +117,11 @@ approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (r
         },
       });
     });
-    await advanceLinkIfGateOpen(task.linkId);
+    try {
+      await advanceLinkIfGateOpen(task.linkId);
+    } catch (err) {
+      console.error("Gate check failed after approval:", err);
+    }
   } else {
     await prisma.$transaction(async (tx) => {
       await tx.reviewTask.update({ where: { id: task.id }, data: { status: 'CHANGES_REQUESTED' } });
@@ -134,11 +138,11 @@ approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (r
         where: { linkId: task.linkId, stage: 'FULL' },
         data: { status: 'IN_PROGRESS' },
       });
-    });
-    await transition(task.linkId, 'FULL_IN_PROGRESS', {
-      actorType: 'BUYER',
-      actorId: req.user!.userId,
-      note: 'Changes requested by approver',
+      await transition(task.linkId, 'FULL_IN_PROGRESS', {
+        actorType: 'BUYER',
+        actorId: req.user!.userId,
+        note: 'Changes requested by approver',
+      }, tx as any);
     });
   }
 

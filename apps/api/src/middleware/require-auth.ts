@@ -45,8 +45,9 @@ export function requireOwnLink(paramName = 'id'): RequestHandler {
 
     const isBuyer = req.user.role === "BUYER" || req.user.role === "ADMIN";
     const isVendor = req.user.role === "VENDOR";
+    const isAdmin = req.user.role === "ADMIN";
 
-    if (isBuyer && link.buyerOrgId !== req.user.buyerOrgId) {
+    if (isBuyer && !isAdmin && link.buyerOrgId !== req.user.buyerOrgId) {
       res.status(403).json({ error: "Forbidden" }); return;
     }
     if (isVendor && link.vendorUserId !== req.user.userId) {
