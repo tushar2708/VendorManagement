@@ -7,15 +7,52 @@ export const requireAuth: RequestHandler = async (req, res, next) => {
   const session = await auth.api.getSession({ headers: fromNodeHeaders(req.headers) });
   if (!session?.user) { res.status(401).json({ error: "Not authenticated" }); return; }
 
-  const dbUser = await prisma.user.findUnique({
+  const role = (session.user as any).role ?? "BUYER";
+  const tier = (session.user as any).tier ?? "EXECUTIVE";
+
+  let dbUser = await prisma.user.findUnique({
     where: { id: session.user.id },
-    select: { buyerOrgId: true, vendorOrgId: true, buyerRole: true },
+    select: { buyerOrgId: true, vendorOrgId: true, buyerRole: true, name: true },
   });
+
+  if ((role === "BUYER" || role === "ADMIN") && dbUser && !dbUser.buyerOrgId) {
+    const org = await prisma.buyerOrg.create({
+      data: { legalName: dbUser.name ? `${dbUser.name}'s Organization` : "My Organization" },
+    });
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { buyerOrgId: org.id, buyerRole: "OWNER" },
+    });
+    dbUser = { ...dbUser, buyerOrgId: org.id, buyerRole: "OWNER" };
+  }
+
+  if (role === "VENDOR" && dbUser && !dbUser.vendorOrgId) {
+    const email = session.user.email ?? "";
+    const emailDomain = email.split("@")[1] ?? "";
+    let vendorOrg = emailDomain
+      ? await prisma.vendorOrg.findFirst({
+          where: { users: { some: { email: { endsWith: `@${emailDomain}` } } } },
+        })
+      : null;
+    if (!vendorOrg) {
+      vendorOrg = await prisma.vendorOrg.create({
+        data: {
+          legalName: dbUser.name ? `${dbUser.name}'s Organization` : "Vendor Organization",
+          contactEmail: email,
+        },
+      });
+    }
+    await prisma.user.update({
+      where: { id: session.user.id },
+      data: { vendorOrgId: vendorOrg.id },
+    });
+    dbUser = { ...dbUser, vendorOrgId: vendorOrg.id };
+  }
 
   req.user = {
     userId: session.user.id,
-    role: (session.user as any).role ?? "BUYER",
-    tier: (session.user as any).tier ?? "EXECUTIVE",
+    role,
+    tier,
     buyerOrgId: dbUser?.buyerOrgId ?? null,
     vendorOrgId: dbUser?.vendorOrgId ?? null,
     buyerRole: dbUser?.buyerRole ?? null,
