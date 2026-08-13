@@ -27,7 +27,7 @@ export function BuyerExecutiveDashboard({ onSwitchToLeadership }: ExecutiveDashb
   const { ref: listRef } = useGridReveal<HTMLDivElement>();
   const headingRef = useTextReveal<HTMLHeadingElement>();
   const { user } = useAuth();
-  const showLeadershipLink = onSwitchToLeadership && canSwitchView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
+  const showLeadershipLink = !!onSwitchToLeadership;
 
   function load(): void {
     setState({ kind: 'loading' });
@@ -48,7 +48,7 @@ export function BuyerExecutiveDashboard({ onSwitchToLeadership }: ExecutiveDashb
         <div className="flex items-center gap-2">
           {showLeadershipLink && (
             <Button variant="secondary" size="sm" onClick={onSwitchToLeadership}>
-              Leadership view
+              Go to Summary
             </Button>
           )}
           <Link to="/requests/new">

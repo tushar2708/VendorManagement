@@ -57,18 +57,16 @@ export function BuyerLeadershipDashboard({ onSwitchToExecutive }: LeadershipDash
             High-level overview of vendor onboarding across all requests.
           </p>
         </div>
-        {canSwitchView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE') && (
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => {
-              if (onSwitchToExecutive) onSwitchToExecutive();
-              else setShowExecutive(true);
-            }}
-          >
-            Switch to executive view
-          </Button>
-        )}
+        <Button
+          variant="secondary"
+          size="sm"
+          onClick={() => {
+            if (onSwitchToExecutive) onSwitchToExecutive();
+            else setShowExecutive(true);
+          }}
+        >
+          Go to Drill-Down View
+        </Button>
       </div>
 
       {state.kind === 'loading' && (
