@@ -353,11 +353,56 @@ async function main() {
   // ── SLA Rules ──
   for (const s of SLA_RULES) await ensureSlaRule(s.stage, s.slaDays);
 
+  // ── Quotations for the IN_PROGRESS requirement ──
+  const reqIP = reqIds[ipReq1];
+  if (reqIP) {
+    const candidates = await prisma.requestCandidate.findMany({
+      where: { requestId: reqIP },
+    });
+    const quotationPrices = [
+      { unitPrice: 1200, toolingPerUnit: 150, freightPerUnit: 80, leadTimeDays: 45 },
+      { unitPrice: 1500, toolingPerUnit: 200, freightPerUnit: 100, leadTimeDays: 40 },
+      { unitPrice: 1800, toolingPerUnit: 250, freightPerUnit: 120, leadTimeDays: 35 },
+    ];
+    for (let i = 0; i < candidates.length; i++) {
+      const c = candidates[i];
+      const prices = quotationPrices[i] ?? quotationPrices[quotationPrices.length - 1];
+      await prisma.quotation.upsert({
+        where: { requestId_vendorId: { requestId: reqIP, vendorId: c.vendorId } },
+        create: {
+          requestId: reqIP,
+          vendorId: c.vendorId,
+          unitPrice: prices.unitPrice,
+          toolingPerUnit: prices.toolingPerUnit,
+          freightPerUnit: prices.freightPerUnit,
+          leadTimeDays: prices.leadTimeDays,
+          location: 'Pune, Maharashtra',
+          capacityNote: '200 tons/month',
+          capturedById: ownerId,
+        },
+        update: {},
+      });
+    }
+    track("Quotation", candidates.length > 0);
+  }
+
+  // ── Mobile verification on CEO user ──
+  const ceoId = userIds['ceo@meridian.test'];
+  if (ceoId) {
+    await prisma.user.update({
+      where: { id: ceoId },
+      data: {
+        mobileNumber: '+919876543210',
+        mobileVerifiedAt: new Date(),
+      },
+    });
+  }
+
   // ── Summary ──
-  const [users, dvs, reqs, cands, links, tasks, contracts, subs, checks] = await Promise.all([
+  const [users, dvs, reqs, cands, links, tasks, contracts, subs, checks, quotations] = await Promise.all([
     prisma.user.count(), prisma.directoryVendor.count(), prisma.vendorRequest.count(),
     prisma.requestCandidate.count(), prisma.vendorBuyerLink.count(), prisma.reviewTask.count(),
-    prisma.contract.count(), prisma.submission.count(), prisma.verificationCheck.count(),
+    prisma.contract.count(), prisma.submission.count(), prisma.verificationCheck.count(), prisma.quotation.count(),
   ]);
   console.log("\nSeed complete.\n");
   console.log("  Table                 Created   Skipped   Total");
@@ -367,7 +412,7 @@ async function main() {
     ["RequestCandidate", cands], ["VendorBuyerLink", links], ["VendorInvitation", await prisma.vendorInvitation.count()],
     ["Submission", subs], ["FieldValue", await prisma.fieldValue.count()],
     ["VerificationCheck", checks], ["ReviewTask", tasks], ["Contract", contracts],
-    ["SlaRule", await prisma.slaRule.count()], ["Account", await prisma.account.count()],
+    ["Quotation", quotations], ["SlaRule", await prisma.slaRule.count()], ["Account", await prisma.account.count()],
   ] as const;
   for (const [name, total] of rows) {
     const s = stats[name] ?? { created: 0, skipped: 0 };

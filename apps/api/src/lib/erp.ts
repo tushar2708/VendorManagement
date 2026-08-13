@@ -1,5 +1,5 @@
-import crypto from "node:crypto";
 import { prisma } from "@vendor-management/db";
+import { erpProvider } from "../providers/index.js";
 import { transition } from "./link-state.js";
 import { promoteOnboardedToDirectory } from "./directory-sync.js";
 
@@ -9,11 +9,6 @@ const failSet = new Set<string>();
 
 export function markErpSyncToFail(linkId: string): void {
   failSet.add(linkId);
-}
-
-export function generateVendorCode(linkId: string): string {
-  const hash = crypto.createHash("sha256").update(linkId).digest("hex");
-  return "0001" + hash.slice(0, 6).toUpperCase();
 }
 
 export async function resolveErpIfDue(linkId: string): Promise<void> {
@@ -32,12 +27,12 @@ export async function resolveErpIfDue(linkId: string): Promise<void> {
     return;
   }
 
-  const vendorCode = generateVendorCode(linkId);
+  const result = await erpProvider.pushVendor({ vendorId: linkId, name: "" });
 
   await prisma.$transaction(async (tx) => {
     await tx.vendorBuyerLink.update({
       where: { id: linkId },
-      data: { erpVendorCode: vendorCode, onboardedAt: new Date() },
+      data: { erpVendorCode: result.vendorCode, onboardedAt: new Date() },
     });
 
     await transition(linkId, "ONBOARDED", { actorType: "SYSTEM", note: "ERP sync complete" }, tx as any);

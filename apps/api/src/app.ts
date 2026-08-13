@@ -19,6 +19,13 @@ import { contractsRouter } from "./routes/contracts-v2.js";
 import { uploadsRouter } from "./routes/uploads.js";
 import { filesRouter } from "./routes/files.js";
 import { teamRouter } from "./routes/team.js";
+import { trackerRouter } from "./routes/tracker.js";
+import { fullPackRouter } from "./routes/full-pack-routes.js";
+import { vendorsRouter } from "./routes/vendors-routes.js";
+import { erpRouter } from "./routes/erp-routes.js";
+import { quotationsRouter } from "./routes/quotations.js";
+import { controlsRouter } from "./routes/controls-routes.js";
+import { mobileRouter } from "./routes/mobile.js";
 import { errorHandler } from "./middleware/error-handler.js";
 
 export const app = express();
@@ -42,6 +49,13 @@ app.use("/api/uploads", uploadsRouter);
 app.use("/api/files", filesRouter);
 app.use("/api/team", teamRouter);
 app.use("/api/invite", inviteRouter);
+app.use("/api/vendors", trackerRouter);
+app.use("/api/vendors", fullPackRouter);
+app.use("/api/vendors", vendorsRouter);
+app.use("/api/vendors", erpRouter);
+app.use("/api/vendors", controlsRouter);
+app.use("/api/requests", quotationsRouter);
+app.use("/api/vendor/mobile", mobileRouter);
 
 app.all("/api/*splat", (_request, response) => {
   response.status(404).json({ success: false, error: "API route not found" });

@@ -7,7 +7,7 @@ import { auth } from "./auth.js";
 
 export const teamRouter = Router();
 teamRouter.use(requireAuth);
-teamRouter.use(requireRole("BUYER"));
+teamRouter.use(requireRole("BUYER", "ADMIN"));
 
 teamRouter.get("/", async (req, res) => {
   const users = await prisma.user.findMany({
@@ -28,6 +28,13 @@ teamRouter.post("/", validateBody(createTeamMemberSchema), async (req, res) => {
 
   const existing = await prisma.user.findUnique({ where: { email: req.body.email } });
   if (existing) { res.status(409).json({ error: "Email already taken" }); return; }
+
+  if (req.body.role === "OWNER") {
+    const existingOwner = await prisma.user.findFirst({
+      where: { buyerOrgId: req.user!.buyerOrgId!, buyerRole: "OWNER" },
+    });
+    if (existingOwner) { res.status(409).json({ error: "An owner already exists in this organization" }); return; }
+  }
 
   try {
     const result = await auth.api.signUpEmail({
@@ -53,6 +60,13 @@ teamRouter.patch("/:id", validateBody(updateTeamMemberSchema), async (req, res) 
   const target = await prisma.user.findUnique({ where: { id: targetId } });
   if (!target || target.buyerOrgId !== req.user!.buyerOrgId) {
     res.status(404).json({ error: "User not found" }); return;
+  }
+
+  if (req.body.role === "OWNER") {
+    const existingOwner = await prisma.user.findFirst({
+      where: { buyerOrgId: req.user!.buyerOrgId!, buyerRole: "OWNER", id: { not: targetId } },
+    });
+    if (existingOwner) { res.status(409).json({ error: "An owner already exists in this organization" }); return; }
   }
 
   const updateData: Record<string, unknown> = {};

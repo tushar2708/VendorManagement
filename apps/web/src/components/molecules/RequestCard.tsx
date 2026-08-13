@@ -1,7 +1,9 @@
 import { Link } from 'react-router-dom';
 import type { RequirementSummary } from '@vendor-management/shared';
+import { courtForState } from '@vendor-management/shared';
 import { Card } from '../ui.js';
 import { Badge } from '../atoms/Badge.js';
+import { CourtBadge } from '../atoms/CourtBadge.js';
 import { formatDate } from '../../lib/format.js';
 import { getStatusLabel, getStatusVariant } from '../../lib/stage.js';
 
@@ -26,10 +28,11 @@ export function RequestCard({ requirement: r, index }: RequestCardProps): React.
                 {r.partCategory ? `${r.partCategory} · ` : ''}opened {formatDate(r.createdAt)}
               </p>
             </div>
-            <div className="shrink-0">
+            <div className="shrink-0 flex items-center gap-2">
               <Badge variant={getStatusVariant(r.stage)}>
                 {getStatusLabel(r.stage)}
               </Badge>
+              <CourtBadge court={courtForState(r.stage)} />
             </div>
           </div>
         </Card>

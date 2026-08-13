@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { listMyLinks, getLink } from "../../lib/links-api.js";
 import type { VendorLinkDTO } from "@vendor-management/shared";
-import { ContractsPanel } from "../../components/organisms/ContractsPanel.js";
+import { ContractSetView } from "../../components/organisms/ContractSetView.js";
 import { Card, Spinner } from "../../components/ui.js";
 
 export function VendorContractPage(): React.ReactElement {
@@ -26,7 +26,7 @@ export function VendorContractPage(): React.ReactElement {
     <div>
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Contract</h1>
       {link.contracts && link.contracts.length > 0 && (
-        <ContractsPanel contracts={link.contracts} mode="VENDOR" onRefresh={load} />
+        <ContractSetView vendorId={link.id} side="VENDOR" onRefresh={load} />
       )}
       {(!link.contracts || link.contracts.length === 0) && (
         <Card className="mt-6 p-6 text-center">

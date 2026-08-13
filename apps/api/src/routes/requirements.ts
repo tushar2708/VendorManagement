@@ -13,7 +13,7 @@ import {
 } from '@vendor-management/shared';
 import { prisma } from '@vendor-management/db';
 import { env } from '../config/env.js';
-import { requireAuth } from '../middleware/require-auth.js';
+import { requireAuth, requireRole } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';
 import { sendInviteEmail } from '../lib/email.js';
 import { generateRequestNumber } from '../services/request-number.js';
@@ -92,6 +92,7 @@ function toCandidate(c: any): Candidate {
 export const requirementsRouter = Router();
 
 requirementsRouter.use(requireAuth);
+requirementsRouter.use(requireRole("BUYER", "ADMIN"));
 
 requirementsRouter.get('/stats', async (req, res, next) => {
   try {

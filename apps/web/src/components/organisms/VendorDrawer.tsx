@@ -610,6 +610,9 @@ export function VendorDrawer({ linkId, onClose }: VendorDrawerProps): React.Reac
             </section>
           )}
 
+          {/* Quotation Data - TODO: implement when API provides this data */}
+          {/* Governance Summary - TODO: implement when API provides this data */}
+
           {/* ERP Section */}
           {['APPROVED', 'ERP_SYNCING', 'ONBOARDED', 'ERP_FAILED'].includes(detail.state) && (
             <section>

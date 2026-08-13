@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import type { Candidate, InviteStatus, RequirementDetail } from '@vendor-management/shared';
+import { courtForState } from '@vendor-management/shared';
 import { getRequirement, removeCandidate } from '../../lib/candidates-api.js';
 import { errorMessage } from '../../lib/auth-api.js';
 import { formatDate } from '../../lib/format.js';
@@ -10,7 +11,9 @@ import { EditCandidateModal } from '../../components/EditCandidateModal.js';
 import { SendInvitesModal } from '../../components/SendInvitesModal.js';
 import { Button, Card, Spinner, cn } from '../../components/ui.js';
 import { Badge } from '../../components/atoms/Badge.js';
+import { CourtBadge } from '../../components/atoms/CourtBadge.js';
 import { VendorDrawer } from '../../components/organisms/VendorDrawer.js';
+import { VendorProgressPreview } from '../../components/molecules/VendorProgressPreview.js';
 import { useAuth } from '../../hooks/use-auth.js';
 import { canCreate } from '../../lib/permissions.js';
 
@@ -108,6 +111,7 @@ export function RequirementDetailPage(): React.ReactElement {
 
       {state.kind === 'ready' && (
         <Ready
+          id={id}
           detail={state.detail}
           onAdd={() => setModalOpen(true)}
           onSend={() => setSendOpen(true)}
@@ -156,6 +160,7 @@ export function RequirementDetailPage(): React.ReactElement {
 }
 
 function Ready({
+  id,
   detail,
   onAdd,
   onSend,
@@ -166,6 +171,7 @@ function Ready({
   rowError,
   onVendorDrawerLoad,
 }: {
+  readonly id: string;
   readonly detail: RequirementDetail;
   readonly onAdd: () => void;
   readonly onSend: () => void;
@@ -177,6 +183,7 @@ function Ready({
   readonly onVendorDrawerLoad: () => void;
 }): React.ReactElement {
   const [drawerLinkId, setDrawerLinkId] = useState<string | null>(null);
+  const [previewVendorId, setPreviewVendorId] = useState<string | null>(null);
   const { user } = useAuth();
   const canManageCandidates = canCreate(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE', 'candidates');
   const { title, stage, category, plantLocation, targetAwardDate, processCategories, candidates } = detail;
@@ -309,19 +316,56 @@ function Ready({
                       </td>
                       <td className="px-4 py-3">
                         {c.link && (
-                          <button
-                            type="button"
-                            onClick={() => setDrawerLinkId(c.link!.id)}
-                            className="cursor-pointer"
-                          >
-                            <Badge variant={getStatusVariant(c.link.state)}>
-                              {getStatusLabel(c.link.state)}
-                            </Badge>
-                          </button>
+                          <div className="flex flex-col gap-2">
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setDrawerLinkId(c.link!.id)}
+                                className="cursor-pointer"
+                              >
+                                <Badge variant={getStatusVariant(c.link.state)}>
+                                  {getStatusLabel(c.link.state)}
+                                </Badge>
+                              </button>
+                              <CourtBadge court={courtForState(c.link.state)} />
+                            </div>
+                            <div className="flex flex-wrap gap-1">
+                              <Link
+                                to={`/requests/${id}/prequal/${c.link.id}`}
+                                className="text-xs text-slate-600 hover:text-slate-800 underline"
+                              >
+                                Prequal
+                              </Link>
+                              <span className="text-xs text-slate-300">·</span>
+                              <Link
+                                to={`/requests/${id}/controls/${c.link.id}`}
+                                className="text-xs text-slate-600 hover:text-slate-800 underline"
+                              >
+                                Controls
+                              </Link>
+                              <span className="text-xs text-slate-300">·</span>
+                              <Link
+                                to={`/requests/${id}/vendors/${c.link.id}/contracts`}
+                                className="text-xs text-slate-600 hover:text-slate-800 underline"
+                              >
+                                Contracts
+                              </Link>
+                            </div>
+                          </div>
                         )}
                       </td>
                       <td className="px-4 py-3 text-right">
                         <div className="flex items-center justify-end gap-2">
+                          {c.link && (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewVendorId(c.link!.id)}
+                              className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
+                              title="Preview vendor progress"
+                            >
+                              Vendor view
+                            </button>
+                          )}
                           {canEdit && canManageCandidates && (
                             <button
                               type="button"
@@ -363,6 +407,14 @@ function Ready({
 
       {drawerLinkId && (
         <VendorDrawer linkId={drawerLinkId} onClose={() => { setDrawerLinkId(null); onVendorDrawerLoad(); }} />
+      )}
+
+      {previewVendorId && (
+        <VendorProgressPreview
+          vendorId={previewVendorId}
+          open={!!previewVendorId}
+          onClose={() => setPreviewVendorId(null)}
+        />
       )}
     </>
   );

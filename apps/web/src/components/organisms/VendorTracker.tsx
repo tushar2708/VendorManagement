@@ -1,3 +1,4 @@
+import React from "react";
 import { LINK_PROGRESS_RAIL, LINK_STATE_META } from "@vendor-management/shared";
 import { getLinkStepIndex, getLinkStepState } from "../../lib/pipeline.js";
 import { ProgressDot } from "../atoms/ProgressDot.js";
@@ -72,13 +73,17 @@ export function VendorTracker({
             {LINK_PROGRESS_RAIL.map((milestone, idx) => {
               const dotState = getLinkStepState(idx, stepIndex);
               return (
-                <div key={idx} className="flex flex-col items-center">
-                  <ProgressDot state={dotState} size="sm" />
-                  <span className="text-xs text-slate-500 mt-1">{LINK_STATE_META[milestone]?.label}</span>
+                <React.Fragment key={idx}>
+                  <div className="flex flex-col items-center min-w-0">
+                    <ProgressDot state={dotState} size="sm" />
+                    <span className="text-[10px] text-slate-500 mt-1 max-w-[4.5rem] text-center leading-tight truncate">
+                      {LINK_STATE_META[milestone]?.label ?? milestone}
+                    </span>
+                  </div>
                   {idx < LINK_PROGRESS_RAIL.length - 1 && (
-                    <div className="w-6 h-0.5 bg-gray-300 mx-1 -mt-1" />
+                    <div className="flex-1 h-0.5 bg-slate-200 self-start mt-[7px] min-w-2" />
                   )}
-                </div>
+                </React.Fragment>
               );
             })}
           </div>

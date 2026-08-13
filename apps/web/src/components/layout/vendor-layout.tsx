@@ -12,6 +12,8 @@ const navItems = [
   { path: '/vendor/full-pack', label: 'Documents', icon: 'file-text' as const },
   { path: '/vendor/contract', label: 'Contract', icon: 'clipboard-check' as const },
   { path: '/vendor/profile', label: 'Profile', icon: 'users' as const },
+  { path: '/vendor/status', label: 'Status', icon: 'clock' as const },
+  { path: '/vendor/mobile', label: 'Mobile Verification', icon: 'mail' as const },
 ];
 
 export function VendorLayout(): React.ReactElement {

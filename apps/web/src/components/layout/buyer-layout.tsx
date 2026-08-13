@@ -1,4 +1,4 @@
-import { Link, Outlet, useLocation } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '@/hooks/use-auth.js';
 import { logout } from '@/lib/auth-client.js';
 import { NavItem } from '../molecules/NavItem.js';
