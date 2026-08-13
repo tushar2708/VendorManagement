@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
+import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth.js";
 import { signup } from "@/lib/auth-client.js";
 import { Brand } from "@/components/Brand.js";
@@ -42,7 +42,9 @@ export function SignupPage() {
 
       <main className="flex min-h-screen flex-col px-6 py-8 sm:px-10 lg:min-h-screen">
         <div className="lg:hidden">
-          <Brand size={30} />
+          <Link to="/" aria-label="Back to home">
+            <Brand size={30} />
+          </Link>
         </div>
 
         <div className="flex flex-1 items-center justify-center">
@@ -174,7 +176,9 @@ function BrandPanel() {
       <Dots className="right-10 top-1/2 hidden xl:block" />
 
       <div className="vx-rise relative z-10">
-        <Brand size={34} onDark />
+        <Link to="/" aria-label="Back to home">
+          <Brand size={34} onDark />
+        </Link>
       </div>
 
       <div className="relative z-10 max-w-md">
