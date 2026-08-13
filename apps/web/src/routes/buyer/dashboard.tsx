@@ -10,7 +10,7 @@ import { RequestCard } from '../../components/molecules/RequestCard.js';
 import { useGridReveal } from '../../hooks/use-grid-reveal.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
 import { useAuth } from '../../hooks/use-auth.js';
-import { getDefaultView } from '../../lib/permissions.js';
+import { getDefaultView, canSwitchView } from '../../lib/permissions.js';
 import { BuyerLeadershipDashboard } from './leadership-dashboard.js';
 
 type LoadState =
@@ -18,10 +18,16 @@ type LoadState =
   | { readonly kind: 'error'; readonly message: string }
   | { readonly kind: 'ready'; readonly requirements: RequirementSummary[]; readonly stats: RequirementStats };
 
-export function BuyerExecutiveDashboard(): React.ReactElement {
+interface ExecutiveDashboardProps {
+  onSwitchToLeadership?: () => void;
+}
+
+export function BuyerExecutiveDashboard({ onSwitchToLeadership }: ExecutiveDashboardProps = {}): React.ReactElement {
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const { ref: listRef } = useGridReveal<HTMLDivElement>();
   const headingRef = useTextReveal<HTMLHeadingElement>();
+  const { user } = useAuth();
+  const showLeadershipLink = onSwitchToLeadership && canSwitchView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
 
   function load(): void {
     setState({ kind: 'loading' });
@@ -39,12 +45,19 @@ export function BuyerExecutiveDashboard(): React.ReactElement {
           <h1 ref={headingRef} className="text-3xl font-bold tracking-tight text-slate-900">My requests</h1>
           <p className="mt-1 text-sm text-slate-500">Where every vendor onboarding stands right now.</p>
         </div>
-        <Link to="/requests/new">
-          <Button>
-            <Icon name="plus-circle" size={16} />
-            New request
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {showLeadershipLink && (
+            <Button variant="secondary" size="sm" onClick={onSwitchToLeadership}>
+              Leadership view
+            </Button>
+          )}
+          <Link to="/requests/new">
+            <Button>
+              <Icon name="plus-circle" size={16} />
+              New request
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {state.kind === 'loading' && (
@@ -93,10 +106,11 @@ export function BuyerExecutiveDashboard(): React.ReactElement {
 
 export function BuyerDashboard(): React.ReactElement {
   const { user } = useAuth();
-  const view = getDefaultView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
+  const defaultView = getDefaultView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
+  const [view, setView] = useState<'executive' | 'leadership'>(defaultView);
 
   if (view === 'leadership') {
-    return <BuyerLeadershipDashboard />;
+    return <BuyerLeadershipDashboard onSwitchToExecutive={() => setView('executive')} />;
   }
-  return <BuyerExecutiveDashboard />;
+  return <BuyerExecutiveDashboard onSwitchToLeadership={() => setView('leadership')} />;
 }
