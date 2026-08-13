@@ -15,6 +15,7 @@ const envSchema = z.object({
   APP_BASE_URL: z.string().url().default("http://localhost:5173"),
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.string().default("onboarding@vendor.local"),
+  MIXPANEL_TOKEN: z.string().optional(),
 });
 
 const testDefaults = process.env.NODE_ENV === "test"
