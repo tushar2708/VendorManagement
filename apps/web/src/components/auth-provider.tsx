@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef, type ReactNode } from "react";
 import { AuthContext, type AuthContextType } from "@/hooks/use-auth.js";
 import { getSession } from "@/lib/auth-client.js";
+import { identifyUser, resetAnalytics } from "@/lib/analytics.js";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthContextType["user"]>(null);
@@ -12,7 +13,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     inflight.current = true;
     try {
       const session = await getSession();
-      setUser(session?.user ?? null);
+      const u = session?.user ?? null;
+      setUser(u);
+      if (u) {
+        identifyUser({ id: u.id, email: u.email, name: u.name, role: u.role, tier: u.tier });
+      } else {
+        resetAnalytics();
+      }
     } catch {
       setUser(null);
     } finally {
