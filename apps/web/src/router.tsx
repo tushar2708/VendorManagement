@@ -24,6 +24,7 @@ import { VendorContractPage } from './routes/vendor/contract.js';
 import { VendorProfilePage } from './routes/vendor/profile.js';
 import StatusTrackerPage from './routes/vendor/status.js';
 import MobilePage from './routes/vendor/mobile.js';
+import { ForgotPasswordPage } from './routes/forgot-password.js';
 import { AuthLayout } from './components/layout/auth-layout.js';
 import { BuyerLayout } from './components/layout/buyer-layout.js';
 import { VendorLayout } from './components/layout/vendor-layout.js';
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
     children: [
       { path: "/login", element: <LoginPage /> },
       { path: "/signup", element: <SignupPage /> },
+      { path: "/forgot-password", element: <ForgotPasswordPage /> },
     ],
   },
   {

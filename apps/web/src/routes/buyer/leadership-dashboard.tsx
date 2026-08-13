@@ -21,7 +21,11 @@ type LoadState =
   | { kind: 'error'; message: string }
   | { kind: 'ready'; req: RequirementAnalytics; appr: ApprovalAnalytics };
 
-export function BuyerLeadershipDashboard(): React.ReactElement {
+interface LeadershipDashboardProps {
+  onSwitchToExecutive?: () => void;
+}
+
+export function BuyerLeadershipDashboard({ onSwitchToExecutive }: LeadershipDashboardProps = {}): React.ReactElement {
   const { user } = useAuth();
   const [state, setState] = useState<LoadState>({ kind: 'loading' });
   const [showExecutive, setShowExecutive] = useState(false);
@@ -40,7 +44,7 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
 
   useEffect(load, []);
 
-  if (showExecutive) return <BuyerExecutiveDashboard />;
+  if (showExecutive) return <BuyerExecutiveDashboard onSwitchToLeadership={() => setShowExecutive(false)} />;
 
   return (
     <div>
@@ -57,7 +61,10 @@ export function BuyerLeadershipDashboard(): React.ReactElement {
           <Button
             variant="secondary"
             size="sm"
-            onClick={() => setShowExecutive(true)}
+            onClick={() => {
+              if (onSwitchToExecutive) onSwitchToExecutive();
+              else setShowExecutive(true);
+            }}
           >
             Switch to executive view
           </Button>

@@ -56,7 +56,7 @@ approvalsRouter.get('/', async (req, res) => {
 
 approvalsRouter.get('/analytics', async (req, res) => {
   const tasks = await prisma.reviewTask.findMany({
-    where: { link: { buyerOrgId: req.user!.buyerOrgId! }, status: 'PENDING' },
+    where: { link: { buyerOrgId: req.user!.buyerOrgId! }, status: { in: ['PENDING', 'IN_PROGRESS', 'INFORMATION_REQUIRED'] } },
     include: { link: true },
   });
 
