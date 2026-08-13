@@ -84,7 +84,7 @@ export async function buildActivityFeed(buyerOrgId: string, limit = 60): Promise
       category: "approval",
       vendorName: ctx?.vendorName ?? null,
       requirementTitle: ctx?.requirementTitle ?? null,
-      description: `${d.reviewTask.stage} ${d.decision.toLowerCase().replace("_", " ")}`,
+      description: `${d.reviewTask.stage} ${d.decision.toLowerCase().replace(/_/g, " ")}`,
     });
   }
 

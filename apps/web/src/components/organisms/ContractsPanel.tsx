@@ -3,6 +3,7 @@ import type { ContractDTO } from "@vendor-management/shared";
 import {
   CONTRACT_TYPE_LABEL,
   CONTRACT_STATE_LABEL,
+  VENDOR_TURN_CONTRACT_STATES,
 } from "@vendor-management/shared";
 import {
   uploadDraft,
@@ -101,17 +102,20 @@ export function ContractsPanel({
             </div>
 
             {/* Current version download */}
-            {contract.currentVersionId && (
-              <div className="flex items-center gap-2">
-                <a
-                  href={fileUrl(contract.currentVersionId)}
-                  download
-                  className="text-sm text-blue-600 hover:underline"
-                >
-                  Download Current Version
-                </a>
-              </div>
-            )}
+            {contract.currentVersionId && (() => {
+              const currentVersion = contract.versions.find(v => v.id === contract.currentVersionId);
+              return currentVersion ? (
+                <div className="flex items-center gap-2">
+                  <a
+                    href={fileUrl(currentVersion.fileBlobId)}
+                    download
+                    className="text-sm text-blue-600 hover:underline"
+                  >
+                    Download Current Version
+                  </a>
+                </div>
+              ) : null;
+            })()}
 
             {/* Comments list */}
             {contract.comments && contract.comments.length > 0 && (
@@ -199,49 +203,49 @@ export function ContractsPanel({
 
               {mode === "VENDOR" && (
                 <div className="space-y-3">
-                  {requestChangesId === contract.id ? (
-                    <div className="space-y-2">
-                      <textarea
-                        value={requestChangesText}
-                        onChange={(e) => setRequestChangesText(e.target.value)}
-                        placeholder="Describe requested changes"
-                        className="w-full text-xs border rounded px-2 py-2"
-                        rows={3}
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            handleRequestChanges(contract.id)
-                          }
-                          disabled={loading === contract.id}
-                        >
-                          Send Request
-                        </Button>
+                  {VENDOR_TURN_CONTRACT_STATES.includes(contract.state as any) && (
+                    <>
+                      {requestChangesId === contract.id ? (
+                        <div className="space-y-2">
+                          <textarea
+                            value={requestChangesText}
+                            onChange={(e) => setRequestChangesText(e.target.value)}
+                            placeholder="Describe requested changes"
+                            className="w-full text-xs border rounded px-2 py-2"
+                            rows={3}
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                handleRequestChanges(contract.id)
+                              }
+                              disabled={loading === contract.id}
+                            >
+                              Send Request
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                setRequestChangesId(null);
+                                setRequestChangesText("");
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
                         <Button
                           size="sm"
                           variant="secondary"
-                          onClick={() => {
-                            setRequestChangesId(null);
-                            setRequestChangesText("");
-                          }}
+                          onClick={() => setRequestChangesId(contract.id)}
                         >
-                          Cancel
+                          Request Changes
                         </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => setRequestChangesId(contract.id)}
-                    >
-                      Request Changes
-                    </Button>
-                  )}
+                      )}
 
-                  {contract.state === "AWAITING_SIGNATURES" && (
-                    <>
                       <Button
                         size="sm"
                         variant="secondary"
@@ -250,28 +254,31 @@ export function ContractsPanel({
                       >
                         Agree
                       </Button>
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-600 mb-2">
-                          Upload Signed
-                        </label>
-                        <input
-                          type="file"
-                          accept=".pdf"
-                          onChange={(e) => {
-                            const file = e.currentTarget.files?.[0];
-                            if (file) {
-                              handleFileUpload(
-                                contract.id,
-                                file,
-                                "vendor-signed"
-                              );
-                            }
-                          }}
-                          disabled={loading === contract.id}
-                          className="text-sm"
-                        />
-                      </div>
                     </>
+                  )}
+
+                  {(contract.state === "AWAITING_SIGNATURES" || contract.state === "PARTIALLY_EXECUTED") && (
+                    <div>
+                      <label className="block text-xs font-semibold text-gray-600 mb-2">
+                        Upload Signed
+                      </label>
+                      <input
+                        type="file"
+                        accept=".pdf"
+                        onChange={(e) => {
+                          const file = e.currentTarget.files?.[0];
+                          if (file) {
+                            handleFileUpload(
+                              contract.id,
+                              file,
+                              "vendor-signed"
+                            );
+                          }
+                        }}
+                        disabled={loading === contract.id}
+                        className="text-sm"
+                      />
+                    </div>
                   )}
                 </div>
               )}

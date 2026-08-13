@@ -2,7 +2,6 @@ export * from "./health.js";
 export * from "./schemas/enums.js";
 export * from "./schemas/auth.js";
 export * from "./schemas/request.js";
-export * from "./schemas/vendor.js";
 export * from "./schemas/invitation.js";
 export * from "./schemas/prequal.js";
 export * from "./schemas/document.js";

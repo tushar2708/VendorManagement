@@ -11,8 +11,13 @@ export function PrequalPage(): React.ReactElement {
 
   async function load() {
     const links = await listMyLinks();
-    if (links.length > 0) {
-      const detail = await getLink(links[0].id);
+    const params = new URLSearchParams(window.location.search);
+    const targetId = params.get("linkId");
+    const target = targetId
+      ? links.find((l) => l.id === targetId)
+      : links.find((l) => l.state === "PREQUAL_IN_PROGRESS" || l.state === "INVITED") ?? links[0];
+    if (target) {
+      const detail = await getLink(target.id);
       setLink(detail);
     }
     setLoading(false);
@@ -28,7 +33,7 @@ export function PrequalPage(): React.ReactElement {
       <h1 className="text-3xl font-bold tracking-tight text-slate-900">Pre-qualification</h1>
       <VendorTracker state={link.state} tat={link.tat} erpVendorCode={link.erpVendorCode} buyerContact={link.buyerContact} />
       {(link.state === "PREQUAL_IN_PROGRESS" || link.state === "INVITED") && (
-        <OnboardingForm linkId={link.id} stage="PREQUAL" processCategories={[]} fields={link.fields} documents={link.documents} onRefresh={load} />
+        <OnboardingForm linkId={link.id} stage="PREQUAL" processCategories={link.processCategories ?? []} fields={link.fields} documents={link.documents} onRefresh={load} />
       )}
       {link.state !== "PREQUAL_IN_PROGRESS" && link.state !== "INVITED" && (
         <Card className="mt-6 p-6"><p className="text-sm text-slate-500">Pre-qualification is {link.state === "PREQUAL_SUBMITTED" ? "submitted and under review" : "complete"}.</p></Card>

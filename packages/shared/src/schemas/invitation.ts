@@ -19,7 +19,7 @@ export const invitationResponseSchema = z.object({
   email: z.string().nullable(),
   status: inviteStatusSchema,
   expiresAt: z.string(),
-  candidateId: z.string(),
+  vendorId: z.string(),
   requestId: z.string(),
   createdAt: z.string(),
 });

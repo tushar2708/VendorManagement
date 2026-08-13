@@ -5,6 +5,14 @@ import { getStatusLabel, getStatusVariant } from "../../lib/stage.js";
 import { Badge } from "../../components/atoms/Badge.js";
 import { Card, Spinner } from "../../components/ui.js";
 
+function vendorRouteForState(state: string): string {
+  if (["PREQUAL_IN_PROGRESS", "PREQUAL_SUBMITTED", "PREQUAL_UNDER_REVIEW", "PREQUAL_CLEARED", "INVITED"].includes(state)) return "/vendor/prequal";
+  if (["FULL_IN_PROGRESS", "FULL_SUBMITTED", "FULL_UNDER_REVIEW", "AWARDED"].includes(state)) return "/vendor/full-pack";
+  if (["CONTRACTS_IN_PROGRESS", "APPROVED"].includes(state)) return "/vendor/contract";
+  if (state === "ONBOARDED") return "/vendor/complete";
+  return "/vendor/prequal";
+}
+
 export function VendorDashboard(): React.ReactElement {
   const [links, setLinks] = useState<LinkSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +22,7 @@ export function VendorDashboard(): React.ReactElement {
     listMyLinks()
       .then((data) => {
         setLinks(data);
-        if (data.length === 1) navigate(`/vendor/prequal`);
+        if (data.length === 1) navigate(vendorRouteForState(data[0].state));
       })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -30,7 +38,7 @@ export function VendorDashboard(): React.ReactElement {
         {links.map((l) => (
           <button
             key={l.id}
-            onClick={() => navigate(`/vendor/prequal`)}
+            onClick={() => navigate(vendorRouteForState(l.state))}
             className="w-full text-left"
           >
             <Card className="p-4 cursor-pointer hover:bg-slate-50">

@@ -37,12 +37,6 @@ export type DirectoryFiltersResponse = z.infer<typeof directoryFiltersResponseSc
 
 export const vendorDetailResponseSchema = z.object({
   vendor: directoryVendorSchema.extend({
-    udyamNumber: z.string().nullable(),
-    vendorCode: z.string().nullable(),
-    category: z.string().nullable(),
-    vendorType: z.string().nullable(),
-    prequalScore: z.number().nullable(),
-    isVerified: z.boolean(),
     createdAt: z.string(),
   }),
   verificationChecks: z.array(z.object({

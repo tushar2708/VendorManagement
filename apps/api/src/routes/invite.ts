@@ -68,7 +68,8 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
     if (!vendorOrg) {
       vendorOrg = await prisma.vendorOrg.create({
         data: {
-          name: req.body.name,
+          legalName: req.body.name ?? "Vendor Organization",
+          contactEmail: req.body.email,
         },
       });
     }
@@ -78,10 +79,15 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
       data: { role: 'VENDOR', tier: 'EXECUTIVE', vendorOrgId: vendorOrg.id },
     });
 
-    const link = await prisma.vendorBuyerLink.findFirst({
-      where: { requestId: invitation.requestId },
-      orderBy: { createdAt: 'desc' },
+    const candidate = await prisma.requestCandidate.findFirst({
+      where: { requestId: invitation.requestId, vendorId: (invitation as any).vendorId },
     });
+    let link = null;
+    if (candidate) {
+      link = await prisma.vendorBuyerLink.findUnique({
+        where: { candidateId: candidate.id },
+      });
+    }
 
     if (link) {
       await prisma.vendorBuyerLink.update({
@@ -95,7 +101,9 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
             actorType: 'VENDOR', actorId: userId, note: 'Vendor registered',
           });
           await ensureSubmission(link.id, 'PREQUAL');
-        } catch {}
+        } catch (err) {
+          console.error("Failed to transition link:", err);
+        }
       }
     }
 
@@ -125,13 +133,30 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
     });
   } catch (e: any) {
     if (e?.body?.code === 'USER_ALREADY_EXISTS' || e?.message?.includes('already exists')) {
-      const link = await prisma.vendorBuyerLink.findFirst({
-        where: { requestId: invitation.requestId },
-        orderBy: { createdAt: 'desc' },
+      const existingUser = await prisma.user.findUnique({ where: { email: req.body.email } });
+      let linkId = '';
+      if (existingUser) {
+        const existingLink = await prisma.vendorBuyerLink.findFirst({
+          where: { vendorUserId: existingUser.id, requestId: invitation.requestId },
+        });
+        linkId = existingLink?.id ?? '';
+      }
+
+      const session = await auth.api.signInEmail({
+        body: { email: req.body.email, password: req.body.password },
       });
+      const headers = (session as any).headers;
+      if (headers) {
+        const setCookie = headers.get?.('set-cookie') ?? headers['set-cookie'];
+        if (setCookie) {
+          const cookies = Array.isArray(setCookie) ? setCookie : [setCookie];
+          cookies.forEach((c: string) => res.appendHeader('Set-Cookie', c));
+        }
+      }
+
       res.json({
         needsPassword: false,
-        linkId: link?.id ?? '',
+        linkId,
         requirementTitle: invitation.request.title ?? '',
         email: req.body.email,
       });

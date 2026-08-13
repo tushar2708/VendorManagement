@@ -266,7 +266,7 @@ async function loadDetail(buyerOrgId: string, id: string): Promise<RequirementDe
         orderBy: { createdAt: 'asc' },
         include: {
           link: {
-            select: { state: true, prequalScore: true },
+            select: { id: true, state: true, prequalScore: true },
           },
         },
       },

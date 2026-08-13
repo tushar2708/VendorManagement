@@ -2,7 +2,7 @@ import { z } from "zod";
 import { approvalStageSchema, reviewTaskStatusSchema, slaRiskSchema } from "./enums.js";
 
 export const updateApprovalSchema = z.object({
-  status: z.enum(["APPROVED", "REJECTED"]),
+  status: z.enum(["APPROVED", "CHANGES_REQUESTED"]),
   notes: z.string().optional(),
 });
 export type UpdateApprovalInput = z.infer<typeof updateApprovalSchema>;

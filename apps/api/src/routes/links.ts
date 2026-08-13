@@ -231,6 +231,15 @@ linksRouter.delete('/:id/documents/:docId', async (req, res): Promise<void> => {
     return;
   }
 
+  // Only allow in editable states
+  if (
+    link.state !== 'PREQUAL_IN_PROGRESS' &&
+    link.state !== 'FULL_IN_PROGRESS'
+  ) {
+    res.status(409).json({ error: 'Link is not in an editable state' });
+    return;
+  }
+
   // Get the document and verify it belongs to this link
   const document = await prisma.document.findUnique({
     where: { id: docId },

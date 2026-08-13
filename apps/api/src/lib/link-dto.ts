@@ -16,10 +16,10 @@ export async function loadVendorLinkDTO(linkId: string) {
   const link = await prisma.vendorBuyerLink.findUnique({
     where: { id: linkId },
     include: {
-      requirement: { select: { title: true } },
-      buyerOrg: { select: { name: true } },
+      requirement: { select: { title: true, processCategories: true } },
+      buyerOrg: { select: { legalName: true } },
       candidate: { select: { contactEmail: true } },
-      events: { orderBy: { occurredAt: 'asc' }, select: { occurredAt: true, toState: true } },
+      events: { orderBy: { occurredAt: "asc" as const }, select: { occurredAt: true, toState: true } },
       submissions: {
         include: {
           fieldValues: true,
@@ -31,11 +31,12 @@ export async function loadVendorLinkDTO(linkId: string) {
   });
   if (!link) return null;
 
-  const currentStage = link.stage ?? 'PREQUAL';
-  const currentSub = link.submissions.find((s: any) => s.stage === currentStage);
+  const currentStage = (link as any).stage ?? 'PREQUAL';
+  const subs = (link as any).submissions ?? [];
+  const currentSub = subs.find((s: any) => s.stage === currentStage);
 
   const fields: Record<string, string | null> = {};
-  for (const sub of link.submissions) {
+  for (const sub of subs) {
     for (const fv of sub.fieldValues) {
       fields[fv.fieldKey] = fv.value;
     }
@@ -52,7 +53,8 @@ export async function loadVendorLinkDTO(linkId: string) {
     uploadedAt: d.uploadedAt.toISOString(),
   })) ?? [];
 
-  const timeline = link.events.map((e: any) => ({ at: e.occurredAt, state: e.toState }));
+  const events = (link as any).events ?? [];
+  const timeline = events.map((e: any) => ({ at: e.occurredAt, state: e.toState }));
   const tat = computeDualTat(timeline);
 
   const ownerUser = await prisma.user.findFirst({
@@ -64,15 +66,16 @@ export async function loadVendorLinkDTO(linkId: string) {
     id: link.id,
     state: link.state,
     stage: link.stage,
-    requirementTitle: link.requirement.title ?? '',
-    buyerOrgName: link.buyerOrg.name,
+    requirementTitle: (link as any).requirement?.title ?? '',
+    processCategories: (link as any).requirement?.processCategories ?? [],
+    buyerOrgName: (link as any).buyerOrg?.legalName ?? '',
     buyerContact: {
       name: ownerUser?.name ?? null,
       email: ownerUser?.email ?? '',
     },
     fields,
     documents,
-    contracts: link.contracts.map(mapContract),
+    contracts: ((link as any).contracts ?? []).map(mapContract),
     prequalScore: link.prequalScore,
     erpVendorCode: link.erpVendorCode,
     tat,

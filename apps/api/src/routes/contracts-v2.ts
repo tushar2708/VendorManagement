@@ -62,12 +62,16 @@ contractsRouter.post('/:id/buyer-sign', validateBody(contractUploadSchema), asyn
 
   const versionNo = await nextVersionNo(prisma, contract.id);
   await prisma.$transaction(async (tx) => {
-    await tx.contractVersion.create({
+    const version = await tx.contractVersion.create({
       data: {
         contractId: contract.id, linkId: contract.linkId, versionNo,
         fileBlobId: req.body.fileBlobId, fileName: req.body.fileName,
         uploadedBySide: "BUYER", kind: "BUYER_SIGNED",
       },
+    });
+    await tx.contract.update({
+      where: { id: contract.id },
+      data: { currentVersionId: version.id },
     });
     await recomputeExecution(tx, contract.id);
   });
@@ -110,7 +114,12 @@ contractsRouter.post('/:id/agree', async (req, res) => {
     res.status(409).json({ error: "Not vendor's turn" }); return;
   }
 
-  await prisma.contract.update({ where: { id: contract.id }, data: { state: "AWAITING_SIGNATURES" } });
+  await prisma.$transaction(async (tx) => {
+    assertContractTransition(contract.state, "AGREED");
+    await tx.contract.update({ where: { id: contract.id }, data: { state: "AGREED" } });
+    assertContractTransition("AGREED", "AWAITING_SIGNATURES");
+    await tx.contract.update({ where: { id: contract.id }, data: { state: "AWAITING_SIGNATURES" } });
+  });
   res.json({ ok: true });
 });
 
@@ -123,12 +132,16 @@ contractsRouter.post('/:id/vendor-sign', validateBody(contractUploadSchema), asy
 
   const versionNo = await nextVersionNo(prisma, contract.id);
   await prisma.$transaction(async (tx) => {
-    await tx.contractVersion.create({
+    const version = await tx.contractVersion.create({
       data: {
         contractId: contract.id, linkId: contract.linkId, versionNo,
         fileBlobId: req.body.fileBlobId, fileName: req.body.fileName,
         uploadedBySide: "VENDOR", kind: "VENDOR_SIGNED",
       },
+    });
+    await tx.contract.update({
+      where: { id: contract.id },
+      data: { currentVersionId: version.id },
     });
     await recomputeExecution(tx, contract.id);
   });
