@@ -6,9 +6,11 @@ import { useAuth } from '../hooks/use-auth.js';
 import { Card, Spinner, Button } from '../components/ui.js';
 
 interface InviteInfo {
-  vendor: { id: string; name: string; contactEmail: string };
-  requirementId: string;
+  vendorName: string;
+  email: string;
+  requirementTitle: string;
   alreadyRegistered: boolean;
+  needsPassword: boolean;
 }
 
 type LoadState =
@@ -57,7 +59,7 @@ export function InviteLandingPage(): React.ReactElement {
     try {
       await http.post(`/api/invite/${token}/register`, {
         name: name.trim(),
-        email: info.vendor.contactEmail,
+        email: info.email,
         password,
       });
       await refresh();
@@ -80,7 +82,7 @@ export function InviteLandingPage(): React.ReactElement {
           <div className="text-center">
             <h1 className="text-xl font-bold text-slate-900">You've already registered</h1>
             <p className="mt-2 text-sm text-slate-500">
-              An account already exists for {state.info.vendor.contactEmail}.
+              An account already exists for {state.info.email}.
             </p>
             <Button className="mt-6 w-full" onClick={() => navigate('/login')}>
               Go to login
@@ -89,7 +91,7 @@ export function InviteLandingPage(): React.ReactElement {
         )}
         {state.kind === 'ready' && !state.info.alreadyRegistered && (
           <>
-            <h1 className="text-xl font-bold text-slate-900 text-center">Welcome, {state.info.vendor.name}</h1>
+            <h1 className="text-xl font-bold text-slate-900 text-center">Welcome, {state.info.vendorName}</h1>
             <p className="mt-2 text-sm text-slate-500 text-center">
               You've been invited to register as a vendor. Set up your login below.
             </p>
@@ -103,7 +105,7 @@ export function InviteLandingPage(): React.ReactElement {
               </label>
               <label className="mt-4 block text-sm font-medium">
                 Email
-                <input value={state.info.vendor.contactEmail} disabled className={`${inputClass} bg-slate-50 text-slate-500`} />
+                <input value={state.info.email} disabled className={`${inputClass} bg-slate-50 text-slate-500`} />
               </label>
               <label className="mt-4 block text-sm font-medium">
                 Password
