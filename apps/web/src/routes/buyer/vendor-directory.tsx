@@ -7,6 +7,7 @@ import { VendorRow } from '../../components/molecules/VendorRow.js';
 import { Card, Spinner, Button } from '../../components/ui.js';
 import { Icon } from '../../components/atoms/Icon.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
+import { track } from '../../lib/analytics.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -26,7 +27,12 @@ export function VendorDirectoryPage(): React.ReactElement {
   }
 
   useEffect(() => {
-    const timer = setTimeout(() => load(search), 300);
+    const timer = setTimeout(() => {
+      load(search);
+      // Debounced (300ms) and only for real terms, so we don't flood Mixpanel
+      // with a per-keystroke event.
+      if (search.trim()) track('directory_searched', { search_term: search });
+    }, 300);
     return () => clearTimeout(timer);
   }, [search]);
 

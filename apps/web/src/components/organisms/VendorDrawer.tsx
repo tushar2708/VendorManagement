@@ -15,6 +15,7 @@ import { Badge } from '../atoms/Badge.js';
 import { Button, Card, Spinner, cn } from '../ui.js';
 import { useToast } from '../atoms/Toast.js';
 import { getStatusLabel, getStatusVariant } from '../../lib/stage.js';
+import { track } from '../../lib/analytics.js';
 
 interface VendorDrawerProps {
   readonly linkId: string;
@@ -34,11 +35,21 @@ export function VendorDrawer({ linkId, onClose }: VendorDrawerProps): React.Reac
 
   // Track which actions are in flight
   const actionInFlight = useRef<string | null>(null);
+  // Fire vendor_drawer_opened once per open, not on every 3s poll.
+  const openTracked = useRef(false);
 
   const fetchDetail = useCallback(async () => {
     try {
       const data = await getBuyerLink(linkId);
       setDetail(data);
+      if (!openTracked.current) {
+        openTracked.current = true;
+        track('vendor_drawer_opened', {
+          link_id: linkId,
+          vendor_name: data.candidate.legalName ?? '',
+          link_state: data.state,
+        });
+      }
       setLoading(false);
     } catch (err) {
       console.error('Failed to fetch vendor link detail:', err);

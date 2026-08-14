@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth.js";
 import { login, signup } from "@/lib/auth-client.js";
+import { track } from "@/lib/analytics.js";
 import { Brand } from "@/components/Brand.js";
 
 /**
@@ -31,7 +32,8 @@ export function LoginPage() {
       if (mode === "signup") {
         await signup(name, email, password, tier);
       } else {
-        await login(email, password);
+        const session = await login(email, password);
+        track("login_completed", { role: session.user.role });
       }
       await refresh();
       navigate("/");

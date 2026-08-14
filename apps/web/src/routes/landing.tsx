@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { Brand, VendraxMark } from "../components/Brand.js";
+import { track } from "../lib/analytics.js";
 
 /**
  * Vendrax public marketing landing page. Static & self-contained (no API calls)
@@ -112,6 +113,7 @@ function TopBar() {
           </Link>
           <Link
             to="/login"
+            onClick={() => track("landing_cta_clicked", { position: "topbar" })}
             className="group inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-indigo-900/10 transition-colors hover:bg-indigo-700"
           >
             Book a Demo <ArrowRight />
@@ -141,6 +143,7 @@ function Hero() {
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
               to="/login"
+              onClick={() => track("landing_cta_clicked", { position: "hero" })}
               className="group inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-6 py-3.5 text-sm font-semibold text-white shadow-md shadow-indigo-900/15 transition-colors hover:bg-indigo-700"
             >
               Book a Demo <ArrowRight />
@@ -550,6 +553,7 @@ function FinalCta() {
         <div className="mt-9 flex flex-wrap items-center justify-center gap-3">
           <Link
             to="/login"
+            onClick={() => track("landing_cta_clicked", { position: "final_cta" })}
             className="group inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-7 py-4 text-sm font-semibold text-white shadow-md shadow-indigo-900/15 transition-colors hover:bg-indigo-700"
           >
             Book a Demo <ArrowRight />

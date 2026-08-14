@@ -8,6 +8,7 @@ import { validateBody } from '../middleware/validate.js';
 import { requireAuth } from '../middleware/require-auth.js';
 import { transition } from '../lib/link-state.js';
 import { ensureSubmission } from '../lib/link-dto.js';
+import { trackServer } from '../lib/analytics.js';
 
 export const inviteRouter = Router();
 
@@ -117,6 +118,14 @@ inviteRouter.post('/:token/register', validateBody(registerViaInviteSchema), asy
     await prisma.vendorInvitation.update({
       where: { id: invitation.id },
       data: { status: 'REGISTERED', registeredAt: new Date() },
+    });
+
+    trackServer('invite_redeemed', {
+      distinct_id: userId,
+      request_id: invitation.requestId,
+      vendor_email: req.body.email,
+      ...(link?.id ? { link_id: link.id } : {}),
+      vendor_org: vendorOrg.id,
     });
 
     const session = await auth.api.signInEmail({

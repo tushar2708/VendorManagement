@@ -16,6 +16,7 @@ import { VendorDrawer } from '../../components/organisms/VendorDrawer.js';
 import { VendorProgressPreview } from '../../components/molecules/VendorProgressPreview.js';
 import { useAuth } from '../../hooks/use-auth.js';
 import { canCreate } from '../../lib/permissions.js';
+import { track } from '../../lib/analytics.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -359,7 +360,13 @@ function Ready({
                           {c.link && (
                             <button
                               type="button"
-                              onClick={() => setPreviewVendorId(c.link!.id)}
+                              onClick={() => {
+                                track('vendor_progress_previewed', {
+                                  link_id: c.link!.id,
+                                  vendor_name: c.legalName ?? '',
+                                });
+                                setPreviewVendorId(c.link!.id);
+                              }}
                               className="rounded-md px-2 py-1 text-xs font-medium text-slate-600 hover:bg-slate-100 transition-colors"
                               title="Preview vendor progress"
                             >

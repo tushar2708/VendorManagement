@@ -7,6 +7,7 @@ import { ScoreBar } from '../atoms/ScoreBar.js';
 import { useHoverScale } from '../../hooks/use-hover-scale.js';
 import { useGridReveal } from '../../hooks/use-grid-reveal.js';
 import { useTextReveal } from '../../hooks/use-text-reveal.js';
+import { track } from '../../lib/analytics.js';
 import { cn } from '../ui.js';
 
 interface AwardThreePaneProps {
@@ -102,11 +103,23 @@ export function AwardThreePane({
   const { ref: gridRef, relayout } = useGridReveal<HTMLTableSectionElement>();
   const hoverRef = useHoverScale<HTMLDivElement>();
 
+  const weightsTrackTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   const handleWeightChange = (criterion: string, value: number) => {
-    setWeights((prev) => ({
-      ...prev,
-      [criterion]: value,
-    }));
+    const next = { ...weights, [criterion]: value };
+    setWeights(next);
+    // Sliders fire continuously while dragging; debounce so Mixpanel only sees
+    // the settled weights, not every intermediate tick.
+    if (weightsTrackTimer.current) clearTimeout(weightsTrackTimer.current);
+    weightsTrackTimer.current = setTimeout(() => {
+      track('scoring_weights_adjusted', {
+        request_id: requestId,
+        quality: next.Quality,
+        cost: next.Cost,
+        delivery: next.Delivery,
+        risk: next.Risk,
+      });
+    }, 500);
   };
 
   const sortedCandidates = useMemo(() => {

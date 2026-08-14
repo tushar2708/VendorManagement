@@ -2,6 +2,7 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/use-auth.js";
 import { signup } from "@/lib/auth-client.js";
+import { track } from "@/lib/analytics.js";
 import { Brand } from "@/components/Brand.js";
 
 type Tier = "EXECUTIVE" | "LEADERSHIP";
@@ -25,6 +26,8 @@ export function SignupPage() {
     try {
       await signup(name, email, password, tier);
       await refresh();
+      // Fired after refresh() so identify() has already run for this user.
+      track("signup_completed", { tier, role: "BUYER" });
       navigate("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");
@@ -100,7 +103,10 @@ export function SignupPage() {
                     <button
                       key={tierOption}
                       type="button"
-                      onClick={() => setTier(tierOption)}
+                      onClick={() => {
+                        setTier(tierOption);
+                        track("tier_selected", { tier: tierOption });
+                      }}
                       className={`rounded-xl border-2 px-4 py-3 text-left transition-colors ${
                         tier === tierOption
                           ? "border-indigo-600 bg-indigo-50"

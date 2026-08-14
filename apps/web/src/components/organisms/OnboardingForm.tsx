@@ -10,6 +10,7 @@ import {
 import { uploadFile } from "../../lib/files-api.js";
 import { fileUrl } from "../../lib/files-api.js";
 import { Button, Card } from "../ui.js";
+import { track } from "../../lib/analytics.js";
 
 interface OnboardingFormProps {
   linkId: string;
@@ -153,6 +154,12 @@ export function OnboardingForm({
     setLoading(true);
     try {
       await submitLink(linkId);
+      track("onboarding_form_submitted", {
+        link_id: linkId,
+        stage,
+        field_count: Object.keys(fields).length,
+        doc_count: documents.length,
+      });
       onRefresh();
     } catch (error) {
       console.error("Failed to submit:", error);

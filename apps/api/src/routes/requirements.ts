@@ -17,6 +17,7 @@ import { requireAuth, requireRole } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';
 import { sendInviteEmail } from '../lib/email.js';
 import { generateRequestNumber } from '../services/request-number.js';
+import { trackServer } from '../lib/analytics.js';
 
 const INVITE_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 
@@ -279,6 +280,15 @@ requirementsRouter.post('/', validateBody(createRequirementSchema), async (req, 
       include: { _count: { select: { candidates: true } } },
     });
 
+    trackServer('requirement_created', {
+      distinct_id: req.user!.userId,
+      request_id: created.id,
+      category: created.category,
+      vendor_type: created.vendorType,
+      process: created.process,
+      buyer_org: buyerOrgId,
+    });
+
     res.status(201).json({
       requirement: {
         id: created.id,
@@ -479,6 +489,17 @@ requirementsRouter.post('/:id/candidates', validateBody(addCandidatesSchema), as
       }
     });
 
+    if (dataToCreate.length > 0) {
+      const sources = new Set(dataToCreate.map((d) => d.source.toLowerCase()));
+      trackServer('candidates_shortlisted', {
+        distinct_id: req.user!.userId,
+        request_id: requirementId,
+        count: dataToCreate.length,
+        source: sources.size > 1 ? 'mixed' : [...sources][0],
+        buyer_org: buyerOrgId,
+      });
+    }
+
     const detail = await loadDetail(buyerOrgId, requirementId);
     res.status(201).json({ requirement: detail, added: dataToCreate.length });
   } catch (error) {
@@ -617,6 +638,14 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
       await prisma.vendorRequest.update({
         where: { id: requirementId },
         data: { stage: 'INVITES_SENT' },
+      });
+
+      trackServer('invites_dispatched', {
+        distinct_id: req.user!.userId,
+        request_id: requirementId,
+        count: results.length,
+        sent_count: results.filter((r) => r.sent).length,
+        buyer_org: buyerOrgId,
       });
     }
 

@@ -16,6 +16,12 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().optional(),
   RESEND_FROM: z.string().default("onboarding@vendor.local"),
   MIXPANEL_TOKEN: z.string().optional(),
+  // Gate analytics so local/dev runs don't pollute the shared Mixpanel project.
+  // Off unless the value is exactly "true" (set it in the deployed environment).
+  ANALYTICS_ENABLED: z
+    .string()
+    .optional()
+    .transform((value) => value === "true"),
 });
 
 const testDefaults = process.env.NODE_ENV === "test"

@@ -2,6 +2,7 @@ import { ContractState } from "@prisma/client";
 import { prisma } from "@vendor-management/db";
 import { checkJoinGate } from "./join-gate.js";
 import { transition } from "./link-state.js";
+import { trackServer } from "./analytics.js";
 
 export const CONTRACT_TRANSITIONS: Record<ContractState, ContractState[]> = {
   DRAFT_PENDING:        ["DRAFT_UPLOADED"],
@@ -78,12 +79,19 @@ export async function recomputeExecution(tx: any, contractId: string): Promise<C
 export async function advanceLinkIfGateOpen(linkId: string): Promise<void> {
   const link = await prisma.vendorBuyerLink.findUnique({
     where: { id: linkId },
-    select: { state: true },
+    select: { state: true, vendorUserId: true, vendorOrgId: true },
   });
   if (!link || link.state !== "CONTRACTS_IN_PROGRESS") return;
 
   const gateOpen = await checkJoinGate(linkId);
   if (gateOpen) {
     await transition(linkId, "APPROVED", { actorType: "SYSTEM", note: "Join gate passed" });
+    if (link.vendorUserId) {
+      trackServer("join_gate_passed", {
+        distinct_id: link.vendorUserId,
+        link_id: linkId,
+        ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+      });
+    }
   }
 }

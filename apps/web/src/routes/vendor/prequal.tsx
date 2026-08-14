@@ -6,6 +6,7 @@ import { VendorTracker } from "../../components/organisms/VendorTracker.js";
 import { Card, Spinner } from "../../components/ui.js";
 import { ChipGroup } from "../../components/molecules/ChipGroup.js";
 import { PROCESS_OPTIONS, CERTIFICATION_OPTIONS } from "../../lib/prequal-client.js";
+import { track, timeEvent } from "../../lib/analytics.js";
 
 export function PrequalPage(): React.ReactElement {
   const [link, setLink] = useState<VendorLinkDTO | null>(null);
@@ -35,6 +36,16 @@ export function PrequalPage(): React.ReactElement {
 
   useEffect(() => {
     if (!link) return;
+    // Vendor opened the prequal form. Start a timer so the eventual
+    // onboarding_form_submitted carries how long the form took.
+    if (link.state === "PREQUAL_IN_PROGRESS" || link.state === "INVITED") {
+      track("prequal_form_started", { link_id: link.id });
+      timeEvent("onboarding_form_submitted");
+    }
+  }, [link?.id]);
+
+  useEffect(() => {
+    if (!link) return;
     try {
       if (link.fields.processes) setProcesses(JSON.parse(link.fields.processes));
       if (link.fields.certifications) setCertifications(JSON.parse(link.fields.certifications));
@@ -58,6 +69,11 @@ export function PrequalPage(): React.ReactElement {
           customerReferences: JSON.stringify(customerReferences),
         });
         hasCapabilityChanged.current = false;
+        track("capability_saved", {
+          link_id: link.id,
+          processes_count: processes.length,
+          certifications_count: certifications.length,
+        });
       } catch (e) {
         console.error("Failed to save capability fields:", e);
       }

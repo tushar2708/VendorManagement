@@ -4,6 +4,7 @@ import { requireAuth, requireRole } from "../middleware/require-auth.js";
 import { validateBody } from "../middleware/validate.js";
 import { createTeamMemberSchema, updateTeamMemberSchema } from "@vendor-management/shared";
 import { auth } from "./auth.js";
+import { trackServer } from "../lib/analytics.js";
 
 export const teamRouter = Router();
 teamRouter.use(requireAuth);
@@ -45,6 +46,11 @@ teamRouter.post("/", validateBody(createTeamMemberSchema), async (req, res) => {
       await prisma.user.update({
         where: { id: userId },
         data: { role: "BUYER", buyerOrgId: req.user!.buyerOrgId, buyerRole: req.body.role as any },
+      });
+      trackServer("team_member_added", {
+        distinct_id: req.user!.userId,
+        role: req.body.role,
+        ...(req.user!.buyerOrgId ? { buyer_org: req.user!.buyerOrgId } : {}),
       });
     }
     res.status(201).json({ ok: true });

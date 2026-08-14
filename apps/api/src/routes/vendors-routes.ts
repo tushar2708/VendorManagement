@@ -7,6 +7,7 @@ import { verificationCheckTypeSchema, verificationStatusSchema } from '@vendor-m
 import { BadRequestError, NotFoundError } from '../lib/errors.js';
 import { toDocumentResponse, toVerificationCheckResponse } from '../lib/serialize.js';
 import { recordOverride } from '../lib/verification.js';
+import { trackServer } from '../lib/analytics.js';
 import { verificationProvider } from '../providers/index.js';
 import { requireAuth, requireRole } from '../middleware/require-auth.js';
 
@@ -317,6 +318,15 @@ vendorsRouter.post(
       },
     });
 
+    trackServer('verification_overridden', {
+      distinct_id: request.user!.userId,
+      link_id: linkId,
+      check_id: checkId,
+      action: input.status === 'PASS' ? 'accept' : 'reject',
+      check_type: updated.checkType,
+      ...(link.buyerOrgId ? { buyer_org: link.buyerOrgId } : {}),
+    });
+
     response.json({ success: true, data: toVerificationCheckResponse(updated) });
   },
 );
@@ -449,6 +459,14 @@ vendorsRouter.post('/:id/prequal-decision', requireRole('BUYER', 'ADMIN'), async
     });
 
     return result;
+  });
+
+  trackServer('prequal_decided', {
+    distinct_id: request.user!.userId,
+    link_id: linkId,
+    decision: input.decision,
+    score: input.score,
+    ...(link.buyerOrgId ? { buyer_org: link.buyerOrgId } : {}),
   });
 
   response.json({

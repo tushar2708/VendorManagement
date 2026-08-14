@@ -5,6 +5,7 @@ import { requireAuth } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';
 import { advanceLinkIfGateOpen } from '../lib/contract-state.js';
 import { transition } from '../lib/link-state.js';
+import { trackServer } from '../lib/analytics.js';
 
 export const approvalsRouter = Router();
 approvalsRouter.use(requireAuth);
@@ -153,6 +154,14 @@ approvalsRouter.post('/:id/decide', validateBody(updateApprovalSchema), async (r
       }
     });
   }
+
+  trackServer('governance_decided', {
+    distinct_id: req.user!.userId,
+    link_id: task.linkId,
+    stage: task.stage,
+    decision,
+    ...(task.link.buyerOrgId ? { buyer_org: task.link.buyerOrgId } : {}),
+  });
 
   res.json({ ok: true });
   } catch (error) {

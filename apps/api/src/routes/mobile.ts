@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { requireAuth } from '../middleware/require-auth.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../lib/errors.js';
 import { notificationProvider } from '../providers/index.js';
+import { trackServer } from '../lib/analytics.js';
 
 export const mobileRouter = Router();
 
@@ -120,6 +121,11 @@ mobileRouter.post(
         body: `Your OTP is: ${otp}. Valid for ${OTP_EXPIRY_MINUTES} minutes.`,
       });
 
+      trackServer('mobile_otp_requested', {
+        distinct_id: user.userId,
+        user_id: user.userId,
+      });
+
       // Return OTP in demo mode
       response.status(201).json({
         success: true,
@@ -207,6 +213,11 @@ mobileRouter.post(
           where: { id: link.candidate.vendorId },
           data: { badgeState: 'VERIFIED' },
         });
+      });
+
+      trackServer('mobile_verified', {
+        distinct_id: user.userId,
+        user_id: user.userId,
       });
 
       response.json({

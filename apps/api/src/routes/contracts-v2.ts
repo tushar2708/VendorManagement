@@ -4,6 +4,7 @@ import { requireAuth } from "../middleware/require-auth.js";
 import { validateBody } from "../middleware/validate.js";
 import { contractUploadSchema, contractCommentInputSchema, VENDOR_TURN_CONTRACT_STATES, contractSetFor } from "@vendor-management/shared";
 import { assertContractTransition, nextVersionNo, recomputeExecution, advanceLinkIfGateOpen } from "../lib/contract-state.js";
+import { trackServer } from "../lib/analytics.js";
 
 export const contractsRouter = Router();
 contractsRouter.use(requireAuth);
@@ -97,6 +98,15 @@ contractsRouter.post('/:vendorId/finalise', async (req, res) => {
   }
 
   await advanceLinkIfGateOpen(linkId);
+
+  trackServer('contracts_finalised', {
+    distinct_id: req.user!.userId,
+    link_id: linkId,
+    executed_count: templateSet.length,
+    total_count: templateSet.length,
+    ...(link.buyerOrgId ? { buyer_org: link.buyerOrgId } : {}),
+  });
+
   res.json({ ok: true });
 });
 
@@ -207,6 +217,16 @@ contractsRouter.post('/:id/buyer-sign', validateBody(contractUploadSchema), asyn
     await recomputeExecution(tx, contract.id);
   });
   await advanceLinkIfGateOpen(contract.linkId);
+
+  trackServer('contract_signed', {
+    distinct_id: req.user!.userId,
+    contract_id: contract.id,
+    contract_type: contract.contractType,
+    side: 'BUYER',
+    link_id: contract.linkId,
+    ...(link.buyerOrgId ? { buyer_org: link.buyerOrgId } : {}),
+  });
+
   res.json({ ok: true });
 });
 
@@ -247,6 +267,15 @@ contractsRouter.post('/:id/request-changes', validateBody(contractCommentInputSc
     }
     await tx.contract.update({ where: { id: contract.id }, data: { state: "CHANGES_REQUESTED" } });
   });
+
+  trackServer('contract_change_requested', {
+    distinct_id: req.user!.userId,
+    contract_id: contract.id,
+    contract_type: contract.contractType,
+    link_id: contract.linkId,
+    ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+  });
+
   res.json({ ok: true });
 });
 
@@ -277,6 +306,15 @@ contractsRouter.post('/:id/agree', async (req, res) => {
     assertContractTransition("AGREED", "AWAITING_SIGNATURES");
     await tx.contract.update({ where: { id: contract.id }, data: { state: "AWAITING_SIGNATURES" } });
   });
+
+  trackServer('contract_agreed', {
+    distinct_id: req.user!.userId,
+    contract_id: contract.id,
+    contract_type: contract.contractType,
+    link_id: contract.linkId,
+    ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+  });
+
   res.json({ ok: true });
 });
 
@@ -316,5 +354,15 @@ contractsRouter.post('/:id/vendor-sign', validateBody(contractUploadSchema), asy
     await recomputeExecution(tx, contract.id);
   });
   await advanceLinkIfGateOpen(contract.linkId);
+
+  trackServer('contract_signed', {
+    distinct_id: req.user!.userId,
+    contract_id: contract.id,
+    contract_type: contract.contractType,
+    side: 'VENDOR',
+    link_id: contract.linkId,
+    ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+  });
+
   res.json({ ok: true });
 });

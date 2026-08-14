@@ -12,6 +12,7 @@ import { useTextReveal } from '../../hooks/use-text-reveal.js';
 import { useAuth } from '../../hooks/use-auth.js';
 import { getDefaultView, canSwitchView } from '../../lib/permissions.js';
 import { BuyerLeadershipDashboard } from './leadership-dashboard.js';
+import { track } from '../../lib/analytics.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -109,8 +110,18 @@ export function BuyerDashboard(): React.ReactElement {
   const defaultView = getDefaultView(user?.role ?? 'BUYER', user?.tier ?? 'EXECUTIVE');
   const [view, setView] = useState<'executive' | 'leadership'>(defaultView);
 
+  const switchView = (to: 'executive' | 'leadership') => {
+    track('view_switched', {
+      from_view: view,
+      to_view: to,
+      role: user?.role ?? 'BUYER',
+      tier: user?.tier ?? 'EXECUTIVE',
+    });
+    setView(to);
+  };
+
   if (view === 'leadership') {
-    return <BuyerLeadershipDashboard onSwitchToExecutive={() => setView('executive')} />;
+    return <BuyerLeadershipDashboard onSwitchToExecutive={() => switchView('executive')} />;
   }
-  return <BuyerExecutiveDashboard onSwitchToLeadership={() => setView('leadership')} />;
+  return <BuyerExecutiveDashboard onSwitchToLeadership={() => switchView('leadership')} />;
 }

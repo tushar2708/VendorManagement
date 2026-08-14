@@ -6,6 +6,7 @@ import { Card, Spinner, Button, Chip } from '../../components/ui.js';
 import { Badge } from '../../components/atoms/Badge.js';
 import { VerificationRow } from '../../components/molecules/VerificationRow.js';
 import { formatDate } from '../../lib/format.js';
+import { track } from '../../lib/analytics.js';
 
 type LoadState =
   | { readonly kind: 'loading' }
@@ -56,7 +57,12 @@ export function VendorDetailPage(): React.ReactElement {
             <button
               key={tab}
               type="button"
-              onClick={() => setActiveTab(tab)}
+              onClick={() => {
+                if (tab !== activeTab) {
+                  track('vendor_detail_tab_switched', { tab, vendor_id: id });
+                }
+                setActiveTab(tab);
+              }}
               className={`border-b-2 pb-3 pt-1 text-sm font-medium transition-colors ${
                 activeTab === tab
                   ? 'border-indigo-600 text-indigo-700'

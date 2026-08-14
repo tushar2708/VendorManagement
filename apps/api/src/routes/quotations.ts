@@ -9,6 +9,7 @@ import {
 } from '@vendor-management/shared';
 import { requireAuth, requireRole } from '../middleware/require-auth.js';
 import { NotFoundError } from '../lib/errors.js';
+import { trackServer, setUserProfileOnce } from '../lib/analytics.js';
 
 export const quotationsRouter = Router();
 
@@ -165,6 +166,16 @@ quotationsRouter.put('/:id/quotations/:vendorId', async (request, response, next
         create: { ...input, requestId, vendorId, capturedById: user.userId },
       });
     });
+
+    trackServer('quotation_recorded', {
+      distinct_id: user.userId,
+      request_id: requestId,
+      vendor_id: vendorId,
+      landed_cost: landedCostOf(saved),
+      lead_time_days: saved.leadTimeDays,
+      ...(user.buyerOrgId ? { buyer_org: user.buyerOrgId } : {}),
+    });
+    setUserProfileOnce(user.userId, { first_quotation_at: new Date().toISOString() });
 
     response.json({
       success: true,
