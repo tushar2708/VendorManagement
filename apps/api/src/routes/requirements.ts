@@ -78,7 +78,7 @@ function toCandidate(c: any): Candidate {
     gstin: c.gstin,
     city: c.city,
     state: c.state,
-    inviteStatus: 'PENDING',
+    inviteStatus: c.link ? 'INVITED' : 'PENDING',
     createdAt: c.createdAt.toISOString(),
     link: c.link
       ? {
@@ -329,7 +329,6 @@ async function loadDetail(buyerOrgId: string, id: string): Promise<RequirementDe
     requestNumber: r.requestNumber,
     title: r.title || r.category,
     category: r.category,
-    partCategory: r.category,
     processCategories: r.processCategories,
     plantLocation: r.plantLocation,
     targetAwardDate: r.targetAwardDate ? r.targetAwardDate.toISOString() : null,
@@ -597,6 +596,9 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
     const results: InviteResult[] = [];
 
     for (const candidate of requirement.candidates) {
+      const existingLink = await prisma.vendorBuyerLink.findUnique({ where: { candidateId: candidate.id } });
+      if (existingLink) continue;
+
       const token = crypto.randomBytes(32).toString('base64url');
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
       const link = `${env.APP_BASE_URL}/invite/${token}`;
@@ -630,6 +632,7 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
             stage: 'PREQUAL',
           },
         });
+
       });
 
       results.push({ candidateId: candidate.id, email: candidate.contactEmail || '', sent, link });

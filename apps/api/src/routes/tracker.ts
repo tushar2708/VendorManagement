@@ -116,6 +116,7 @@ export async function buildVendorTracker(
         select: {
           id: true,
           title: true,
+          requestNumber: true,
           createdAt: true,
           createdBy: { select: { name: true, buyerRole: true } },
         },
@@ -234,7 +235,7 @@ export async function buildVendorTracker(
 
   const data = vendorTrackerResponseSchema.parse({
     requestId: link.requirement.id,
-    requestNumber: link.requirement.id.slice(0, 8),
+    requestNumber: link.requirement.requestNumber ?? link.requirement.id.slice(0, 8),
     category: link.requirement.title ?? 'Requirement',
     status: link.state,
     contactName: link.requirement.createdBy?.name ?? null,
@@ -270,7 +271,7 @@ trackerRouter.get(
       throw new NotFoundError('No onboarding link found for this account');
     }
 
-    response.json({ success: true, data: await buildVendorTracker(link.id) });
+    response.json(await buildVendorTracker(link.id));
   },
 );
 
@@ -298,6 +299,6 @@ trackerRouter.get(
       throw new DomainError('Access denied', 403);
     }
 
-    response.json({ success: true, data: await buildVendorTracker(linkId) });
+    response.json(await buildVendorTracker(linkId));
   },
 );

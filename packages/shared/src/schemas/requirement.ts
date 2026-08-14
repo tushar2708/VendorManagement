@@ -17,7 +17,7 @@ export type RequirementSummary = z.infer<typeof requirementSummarySchema>;
 export const inviteRequirementSchema = z.object({
   id: z.string(),
   title: z.string().nullable(),
-  partCategory: z.string().nullable(),
+  category: z.string(),
   processCategories: z.array(z.string()),
   plantLocation: z.string().nullable(),
   targetAwardDate: z.string().nullable(),
