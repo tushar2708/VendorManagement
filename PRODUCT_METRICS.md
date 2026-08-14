@@ -2,6 +2,24 @@
 
 Mixpanel event catalog for the Vendrax vendor management platform. Each row is a custom `track()` or `trackServer()` call. Autocapture handles page views and basic clicks.
 
+## Implementation status
+
+**39 of 40 events are instrumented** and pass typecheck on both workspaces. One is pending:
+
+| Event | Status | Reason |
+|---|---|---|
+| `invite_expired` | ⏳ Not implemented | No code path transitions a link to `EXPIRED` yet (the state exists in the transition table but nothing fires it — there is no invite-expiry job). Nothing to hook until that job exists. |
+
+`login_completed` was added to `login.tsx` (sign-in branch only) with explicit approval to touch that frozen auth file — that one line is the only change made there.
+
+Everything else is live behind an env flag (below). Notes on the build-out:
+
+- **Analytics is gated** by `ANALYTICS_ENABLED` (backend) / `VITE_ANALYTICS_ENABLED` (frontend) — both default **off**, so local/dev runs do not send events. Turn on only in the deployed environment. See `.env.example`.
+- **Group analytics**: buyer-side events carry a `buyer_org` property and vendor-side events carry `vendor_org`, enabling per-org funnels once the group keys are defined in the Mixpanel project. (Frontend `set_group` is wired but currently a no-op because the session does not expose the org id — a small follow-up that needs an auth `additionalField`.)
+- **System-driven events** (`vendor_onboarded`, `erp_pushed`, `erp_push_failed`, `join_gate_passed`, `verification_check_completed`, `directory_vendor_promoted`) have no acting user, so they are attributed to the vendor's `distinct_id` to keep the funnel connected.
+- **`vendor_onboarded.stage_breakdown`** is reconstructed from the link event log (`lib/onboarding-metrics.ts`); governance is folded into the `contracts` bucket because both share the `CONTRACTS_IN_PROGRESS` state.
+- **Debounced** to avoid event floods: `directory_searched` (300ms) and `scoring_weights_adjusted` (500ms).
+
 ## Event Catalog
 
 | Event | Trigger | Side | Properties | Category | Priority |
@@ -87,8 +105,10 @@ Use this to build a bar chart in Mixpanel showing which stage is the bottleneck.
 
 ## Implementation
 
+Both wrappers no-op unless analytics is enabled (`ANALYTICS_ENABLED` / `VITE_ANALYTICS_ENABLED` = `"true"`), so every call below is safe to leave in dev.
+
 1. Frontend: `import { track } from "@/lib/analytics.js"` then `track("event_name", { props })`
-2. Backend: `import { trackServer } from "../lib/analytics.js"` then `trackServer("event_name", { distinct_id, ...props })`
-3. Duration: call `mixpanel.time_event("event_name")` on start, `track("event_name")` on end
-4. Profile counters: `mixpanel.people.increment("vendors_onboarded", 1)`
-5. First-use: `mixpanel.people.set_once({ first_quotation_at: new Date().toISOString() })`
+2. Backend: `import { trackServer } from "../lib/analytics.js"` then `trackServer("event_name", { distinct_id, ...props })` — fire **after** the DB write commits, never inside a `$transaction`.
+3. Duration: `import { timeEvent } from "@/lib/analytics.js"`; call `timeEvent("event_name")` on start, `track("event_name")` on end (Mixpanel attaches `$duration`).
+4. First-use: `import { setUserProfileOnce } from "../lib/analytics.js"` then `setUserProfileOnce(userId, { first_quotation_at: ... })`.
+5. Group profiles: `import { setGroupProfile } from "../lib/analytics.js"` then `setGroupProfile("buyer_org", orgId, { ... })`.

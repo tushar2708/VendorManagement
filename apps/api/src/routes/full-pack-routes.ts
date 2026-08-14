@@ -14,6 +14,7 @@ import {
 import { requireAuth, requireRole } from '../middleware/require-auth.js';
 import { BadRequestError, ConflictError, DomainError, NotFoundError, PayloadTooLargeError } from '../lib/errors.js';
 import { transition } from '../lib/link-state.js';
+import { trackServer } from '../lib/analytics.js';
 
 export const fullPackRouter = Router();
 
@@ -229,6 +230,13 @@ fullPackRouter.put(
       return document;
     });
 
+    trackServer('document_uploaded', {
+      distinct_id: vendorUserId,
+      link_id: link.id,
+      checklist_item_key: code,
+      stage: 'FULL',
+    });
+
     response.status(201).json({
       success: true,
       data: {
@@ -296,6 +304,12 @@ fullPackRouter.post(
       await transition(link.id, 'CONTRACTS_IN_PROGRESS', {
         actorType: 'SYSTEM',
       }, tx);
+    });
+
+    trackServer('full_pack_submitted', {
+      distinct_id: vendorUserId,
+      link_id: link.id,
+      checklist_count: checklist.length,
     });
 
     response.json({

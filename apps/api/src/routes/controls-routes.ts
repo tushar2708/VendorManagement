@@ -17,6 +17,7 @@ import {
 } from '@vendor-management/shared';
 import { requireAuth, requireRole } from '../middleware/require-auth.js';
 import { BadRequestError, ConflictError, NotFoundError } from '../lib/errors.js';
+import { trackServer } from '../lib/analytics.js';
 
 export const controlsRouter = Router();
 
@@ -226,6 +227,14 @@ controlsRouter.patch(
         });
 
         return task;
+      });
+
+      trackServer('governance_decided', {
+        distinct_id: user.userId,
+        link_id: linkId,
+        stage,
+        decision: input.status,
+        ...(link.buyerOrgId ? { buyer_org: link.buyerOrgId } : {}),
       });
 
       response.json({

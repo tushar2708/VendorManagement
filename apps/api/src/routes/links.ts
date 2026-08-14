@@ -9,6 +9,7 @@ import {
 
 import { loadVendorLinkDTO, ensureSubmission } from '../lib/link-dto.js';
 import { transition } from '../lib/link-state.js';
+import { trackServer } from '../lib/analytics.js';
 import { requireAuth, requireRole } from '../middleware/require-auth.js';
 import { validateBody } from '../middleware/validate.js';
 
@@ -209,6 +210,14 @@ linksRouter.post(
       });
     }
 
+    trackServer('document_uploaded', {
+      distinct_id: vendorUserId,
+      link_id: id,
+      checklist_item_key: checklistItemKey,
+      stage: link.stage ?? 'PREQUAL',
+      ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+    });
+
     res.status(200).json({ success: true });
   }
 );
@@ -377,6 +386,24 @@ linksRouter.post('/:id/submit', async (req, res): Promise<void> => {
     actorType: 'VENDOR',
     actorId: vendorUserId,
   });
+
+  if (nextState === 'PREQUAL_SUBMITTED') {
+    trackServer('prequal_submitted', {
+      distinct_id: vendorUserId,
+      link_id: id,
+      request_id: link.requestId,
+      field_count: submission.fieldValues.length,
+      doc_count: submission.documents.length,
+      ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+    });
+  } else if (nextState === 'FULL_SUBMITTED') {
+    trackServer('full_pack_submitted', {
+      distinct_id: vendorUserId,
+      link_id: id,
+      checklist_count: submission.documents.length,
+      ...(link.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+    });
+  }
 
   res.status(200).json({ success: true });
 });

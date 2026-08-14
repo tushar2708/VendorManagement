@@ -20,6 +20,7 @@ import { loadBuyerLinkDetail, mergedFields } from '../lib/buyer-link-dto.js';
 import { buildActivityFeed } from '../lib/activity.js';
 import { listWarmCandidates } from '../lib/directory-sync.js';
 import { sendNotifyEmail } from '../lib/email.js';
+import { trackServer } from '../lib/analytics.js';
 
 export const buyerRouter = Router();
 buyerRouter.use(requireAuth);
@@ -297,7 +298,7 @@ buyerRouter.post('/links/:id/award', requireOwnLink('id'), async (req, res, next
         id: true,
         requestId: true,
         candidate: {
-          select: { contactEmail: true },
+          select: { contactEmail: true, vendorId: true },
         },
         requirement: {
           select: { title: true },
@@ -392,6 +393,14 @@ buyerRouter.post('/links/:id/award', requireOwnLink('id'), async (req, res, next
       }
 
       await listWarmCandidates(tx, link.requestId);
+    });
+
+    trackServer('vendor_awarded', {
+      distinct_id: req.user!.userId,
+      link_id: linkId,
+      request_id: link.requestId,
+      vendor_id: link.candidate.vendorId,
+      buyer_org: req.user!.buyerOrgId!,
     });
 
     void sendNotifyEmail({

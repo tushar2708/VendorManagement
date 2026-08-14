@@ -1,6 +1,7 @@
 import { prisma } from "@vendor-management/db";
 import { verificationProvider } from "../providers/index.js";
 import { CHECK_SUBJECT_FIELD } from "@vendor-management/shared";
+import { trackServer } from "./analytics.js";
 
 export const CHECK_RESOLVE_MS = 1600;
 
@@ -14,6 +15,15 @@ export async function resolveDueChecks(linkId: string): Promise<void> {
   const checks = await prisma.verificationCheck.findMany({
     where: { linkId, status: "RUNNING", ranAt: { lte: cutoff } },
   });
+
+  if (checks.length === 0) return;
+
+  // The resolver is system-driven; attribute the events to the vendor.
+  const link = await prisma.vendorBuyerLink.findUnique({
+    where: { id: linkId },
+    select: { vendorUserId: true, vendorOrgId: true },
+  });
+  const distinctId = link?.vendorUserId ?? null;
 
   for (const check of checks) {
     const result = await verificationProvider.check(check.checkType, {
@@ -29,6 +39,17 @@ export async function resolveDueChecks(linkId: string): Promise<void> {
         expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000),
       },
     });
+
+    if (distinctId) {
+      trackServer("verification_check_completed", {
+        distinct_id: distinctId,
+        link_id: linkId,
+        check_type: check.checkType,
+        status: result.status,
+        ...(result.matchScore != null ? { match_score: result.matchScore } : {}),
+        ...(link?.vendorOrgId ? { vendor_org: link.vendorOrgId } : {}),
+      });
+    }
   }
 }
 
