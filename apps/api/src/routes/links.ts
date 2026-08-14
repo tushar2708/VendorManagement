@@ -123,23 +123,23 @@ linksRouter.put(
     // Ensure submission for current stage
     const submission = await ensureSubmission(id, link.stage ?? "PREQUAL");
 
-    // Upsert each field value
-    for (const field of fields) {
+    // Upsert each field value — fields is a Record<string, string | null>
+    for (const [fieldKey, value] of Object.entries(fields)) {
       await prisma.fieldValue.upsert({
         where: {
           submissionId_fieldKey: {
             submissionId: submission.id,
-            fieldKey: field.fieldKey,
+            fieldKey,
           },
         },
         create: {
           submissionId: submission.id,
           linkId: id,
-          fieldKey: field.fieldKey,
-          value: field.value,
+          fieldKey,
+          value: value as string | null,
         },
         update: {
-          value: field.value,
+          value: value as string | null,
         },
       });
     }
@@ -324,31 +324,33 @@ linksRouter.post('/:id/submit', async (req, res): Promise<void> => {
     message: string;
   }> = [];
 
-  for (const item of (checklist as any)) {
-    if (item.required && item.type === 'field') {
+  for (const field of checklist.fields) {
+    if (field.required) {
       const fieldValue = submission.fieldValues.find(
-        (fv) => fv.fieldKey === item.key
+        (fv) => fv.fieldKey === field.key
       );
 
       if (!fieldValue || !fieldValue.value) {
         errors.push({
           type: 'field',
-          key: item.key,
-          message: `Required field "${item.key}" is empty`,
+          key: field.key,
+          message: `Required field "${field.label}" is empty`,
         });
       }
     }
+  }
 
-    if (item.required && item.type === 'document') {
+  for (const doc of checklist.documents) {
+    if (doc.required) {
       const document = submission.documents.find(
-        (doc) => doc.checklistItemKey === item.key
+        (d) => d.checklistItemKey === doc.key
       );
 
       if (!document) {
         errors.push({
           type: 'document',
-          key: item.key,
-          message: `Required document "${item.key}" is missing`,
+          key: doc.key,
+          message: `Required document "${doc.label}" is missing`,
         });
       }
     }
