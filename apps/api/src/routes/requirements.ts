@@ -463,6 +463,11 @@ requirementsRouter.post('/:id/candidates', validateBody(addCandidatesSchema), as
         }
 
         for (const data of dataToCreate) {
+          const existing = await tx.requestCandidate.findUnique({
+            where: { requestId_vendorId: { requestId: data.requestId, vendorId: data.vendorId } },
+          });
+          if (existing) continue;
+
           await tx.requestCandidate.create({
             data: {
               requestId: data.requestId,
