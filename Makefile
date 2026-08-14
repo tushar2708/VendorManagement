@@ -144,7 +144,7 @@ deploy-vars: ## Upload root .env values to the linked Railway service
 	}' > /tmp/vendor-management-railway-vars.env
 	cd $(ROOT_DIR) && railway variables set $$(tr '\n' ' ' < /tmp/vendor-management-railway-vars.env)
 	@rm -f /tmp/vendor-management-railway-vars.env
-	cd $(ROOT_DIR) && railway variables set NODE_ENV=production
+	cd $(ROOT_DIR) && railway variables set NODE_ENV=production VITE_API_BASE_URL=""
 
 deploy-up: ## Deploy the current branch to Railway
 	cd $(ROOT_DIR) && railway up

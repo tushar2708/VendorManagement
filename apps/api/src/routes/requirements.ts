@@ -329,6 +329,7 @@ async function loadDetail(buyerOrgId: string, id: string): Promise<RequirementDe
     requestNumber: r.requestNumber,
     title: r.title || r.category,
     category: r.category,
+    partCategory: r.category,
     processCategories: r.processCategories,
     plantLocation: r.plantLocation,
     targetAwardDate: r.targetAwardDate ? r.targetAwardDate.toISOString() : null,
