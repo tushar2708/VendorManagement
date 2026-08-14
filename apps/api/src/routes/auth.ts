@@ -9,6 +9,11 @@ export const auth = betterAuth({
   baseURL: env.BETTER_AUTH_URL,
   trustedOrigins: ["*"],
   emailAndPassword: { enabled: true },
+  advanced: {
+    ipAddress: {
+      ipAddressHeaders: ["x-forwarded-for", "x-real-ip"],
+    },
+  },
   user: {
     additionalFields: {
       role: {

@@ -133,9 +133,9 @@ deploy-ensure: ## Create or link a Railway project and service
 		echo "Railway service already exists."; \
 	fi
 
-deploy-vars: ## Upload root .env values to the linked Railway service
-	@echo "Uploading local environment values to Railway..."
-	@cd $(ROOT_DIR) && grep -v '^#' .env | grep -v '^$$' | awk -F= '{ \
+deploy-vars: ## Upload .env.prod values to the linked Railway service
+	@echo "Uploading production environment values to Railway from .env.prod..."
+	@cd $(ROOT_DIR) && grep -v '^#' .env.prod | grep -v '^$$' | awk -F= '{ \
 		key=$$1; \
 		val=substr($$0, index($$0, "=") + 1); \
 		gsub(/^"|"$$/, "", val); \
@@ -144,7 +144,6 @@ deploy-vars: ## Upload root .env values to the linked Railway service
 	}' > /tmp/vendor-management-railway-vars.env
 	cd $(ROOT_DIR) && railway variables set $$(tr '\n' ' ' < /tmp/vendor-management-railway-vars.env)
 	@rm -f /tmp/vendor-management-railway-vars.env
-	cd $(ROOT_DIR) && railway variables set NODE_ENV=production VITE_API_BASE_URL=""
 
 deploy-up: ## Deploy the current branch to Railway
 	cd $(ROOT_DIR) && railway up

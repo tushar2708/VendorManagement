@@ -601,9 +601,6 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
     const results: InviteResult[] = [];
 
     for (const candidate of requirement.candidates) {
-      const existingLink = await prisma.vendorBuyerLink.findUnique({ where: { candidateId: candidate.id } });
-      if (existingLink) continue;
-
       const token = crypto.randomBytes(32).toString('base64url');
       const tokenHash = crypto.createHash('sha256').update(token).digest('hex');
       const link = `${env.APP_BASE_URL}/invite/${token}`;
@@ -616,8 +613,17 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
       });
 
       await prisma.$transaction(async (tx) => {
-        await tx.vendorInvitation.create({
-          data: {
+        await tx.vendorInvitation.upsert({
+          where: { candidateId: candidate.id },
+          update: {
+            tokenHash,
+            magicTokenPlain: token,
+            email: candidate.contactEmail,
+            expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+            status: 'INVITED',
+          },
+          create: {
+            candidateId: candidate.id,
             requestId: requirementId,
             buyerOrgId,
             tokenHash,
@@ -628,8 +634,10 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
           },
         });
 
-        await tx.vendorBuyerLink.create({
-          data: {
+        await tx.vendorBuyerLink.upsert({
+          where: { candidateId: candidate.id },
+          update: { state: 'INVITED', stage: 'PREQUAL' },
+          create: {
             candidateId: candidate.id,
             requestId: requirementId,
             buyerOrgId,
@@ -637,7 +645,6 @@ requirementsRouter.post('/:id/invites', async (req, res, next) => {
             stage: 'PREQUAL',
           },
         });
-
       });
 
       results.push({ candidateId: candidate.id, email: candidate.contactEmail || '', sent, link });

@@ -71,11 +71,31 @@ Railway checks the backend health endpoint at `/api/health`.
 
 ## Environment variables
 
-Keep environment values in local `.env` files or Railway environment settings.
+Create two files from `.env.example`:
 
-Never commit `.env` files, database URLs, authentication secrets, private keys, or other secret values.
+1. **`.env`** — for local development
+2. **`.env.prod`** — for Railway deployment
 
-The repository ignores local environment files. Use `.env.example` only for empty variable names and safe example values.
+```bash
+cp .env.example .env
+cp .env.example .env.prod
+```
+
+Fill both files with your secrets. The key differences:
+
+| Variable | `.env` (local) | `.env.prod` (Railway) |
+|---|---|---|
+| `NODE_ENV` | `development` | `production` |
+| `CORS_ORIGIN` | `http://localhost:5173` | `https://your-app.up.railway.app` |
+| `BETTER_AUTH_URL` | `http://localhost:3001` | `https://your-app.up.railway.app` |
+| `VITE_API_BASE_URL` | `http://localhost:3001` | *(leave empty)* |
+| `APP_BASE_URL` | `http://localhost:5173` | `https://your-app.up.railway.app` |
+
+All other variables (database URL, secrets, API keys) are the same in both files.
+
+`make deploy` reads `.env.prod` and uploads its values to Railway. Local `make dev` reads `.env`.
+
+Never commit `.env` or `.env.prod`. Both are gitignored via the `.env*` pattern.
 
 ## Design mocks
 
