@@ -10,6 +10,11 @@ COPY packages/shared/package.json packages/shared/package.json
 COPY packages/db/package.json packages/db/package.json
 RUN npm ci
 
+ARG VITE_MIXPANEL_TOKEN=""
+ARG VITE_API_BASE_URL=""
+ENV VITE_MIXPANEL_TOKEN=$VITE_MIXPANEL_TOKEN
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+
 COPY apps/web/ apps/web/
 COPY packages/shared/ packages/shared/
 RUN npm run build --workspace packages/shared
